@@ -13,7 +13,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<meta name="version" content="3.2.1">
+<meta name="version" content="3.2.2">
 <meta name="author" content="&#67;&#68;&#80;">
 <meta name="copyright" content="&#67;&#111;&#112;&#121;&#114;&#105;&#103;&#104;&#116; &#169; &#50;&#48;&#50;&#54; &#67;&#68;&#80;. &#65;&#108;&#108; &#114;&#105;&#103;&#104;&#116;&#115; &#114;&#101;&#115;&#101;&#114;&#118;&#101;&#100;.">
 <meta name="rights" content="&#169; &#50;&#48;&#50;&#54; &#67;&#68;&#80; &#45; &#85;&#110;&#97;&#117;&#116;&#104;&#111;&#114;&#105;&#122;&#101;&#100; &#99;&#111;&#112;&#121;&#105;&#110;&#103; &#112;&#114;&#111;&#104;&#105;&#98;&#105;&#116;&#101;&#100;">
@@ -990,7 +990,7 @@ th.sel-th input[type=checkbox]{accent-color:var(--accent);width:15px;height:15px
     </div>
   </div>
 
-  <div class="app-footer" id="appFooter" onclick="hFooterClick()" style="cursor:pointer;user-select:none">TFS Dashboard v3.2.1</div>
+  <div class="app-footer" id="appFooter" onclick="hFooterClick()" style="cursor:pointer;user-select:none">TFS Dashboard v3.2.2</div>
 </div>
 
 <!-- Sprint popup -->
@@ -1568,12 +1568,12 @@ function fetchSpI(ids,spN,pb){var bats=[];for(var i=0;i<ids.length;i+=200)bats.p
   Promise.all(bats.map(b=>tfsGet(SP_BASE+"/"+SP_PROJ+"/_apis/wit/workitems?ids="+b.join(",")+"&$expand=all&api-version=3.0").then(r=>{items=items.concat(r.value||[])}))).then(()=>{
     $(pb).innerHTML='<span class="spinner"></span>Getting dates & capacity...';
     return tfsGet(SP_BASE+"/"+SP_PROJ+"/"+encodeURIComponent(SP_TEAM)+"/_apis/work/teamsettings/iterations?api-version=3.0").then(id=>{
-      var sd=[],itId=null;(id.value||[]).forEach(v=>{if(v.name===spN||(v.path&&v.path.indexOf(spN)>-1)){itId=v.id;var s=getAttr(v,"startDate"),e=getAttr(v,"finishDate");if(s&&e){var d=new Date(s),end=new Date(e);while(d<=end){if(!isWE(d))sd.push(dKey(d));d=new Date(d.getTime()+864e5)}}}});
-      if(!sd.length){var t=new Date();for(var f=13;f>=0;f--){var fd=new Date(t.getTime()-f*864e5);if(!isWE(fd))sd.push(dKey(fd))}}
+      var sd=[],itId=null;(id.value||[]).forEach(v=>{if(v.name===spN||(v.path&&v.path.indexOf(spN)>-1)){itId=v.id;var s=getAttr(v,"startDate"),e=getAttr(v,"finishDate");if(s&&e){var d=new Date(s),end=new Date(e);while(d<=end){sd.push(dKey(d));d=new Date(d.getTime()+864e5)}}}});
+      if(!sd.length){var t=new Date();for(var f=13;f>=0;f--){var fd=new Date(t.getTime()-f*864e5);sd.push(dKey(fd))}}
       var cp=Promise.resolve();
       if(itId){var capP=tfsGet(SP_BASE+"/"+SP_PROJ+"/"+encodeURIComponent(SP_TEAM)+"/_apis/work/teamsettings/iterations/"+itId+"/capacities?api-version=3.0").then(cd=>{capData={};(cd.value||[]).forEach(c=>{var mn=c.teamMember?(c.teamMember.displayName||c.teamMember.uniqueName||""):"";if(!mn)return;var pd=0;(c.activities||[]).forEach(a=>{pd+=(a.capacityPerDay||0)});var dO=[];(c.daysOff||[]).forEach(o=>{var s=new Date(o.start),e=new Date(o.end);if(!isNaN(s)&&!isNaN(e)){var od=new Date(s);while(od<=e){dO.push(dKey(od));od=new Date(od.getTime()+864e5)}}});capData[mn]={capacityPerDay:pd,daysOff:dO}})}).catch(()=>{});var tdoP=tfsGet(SP_BASE+"/"+SP_PROJ+"/"+encodeURIComponent(SP_TEAM)+"/_apis/work/teamsettings/iterations/"+itId+"/teamdaysoff?api-version=3.0").then(td=>{teamDaysOff=[];(td.daysOff||[]).forEach(o=>{var s=new Date(o.start),e=new Date(o.end);if(!isNaN(s)&&!isNaN(e)){var od=new Date(s);while(od<=e){teamDaysOff.push(dKey(od));od=new Date(od.getTime()+864e5)}}})}).catch(()=>{});cp=Promise.all([capP,tdoP])}
       return cp.then(()=>sd);
-    }).catch(()=>{var sd=[];var t=new Date();for(var f=13;f>=0;f--){var fd=new Date(t.getTime()-f*864e5);if(!isWE(fd))sd.push(dKey(fd))}return sd});
+    }).catch(()=>{var sd=[];var t=new Date();for(var f=13;f>=0;f--){var fd=new Date(t.getTime()-f*864e5);sd.push(dKey(fd))}return sd});
   }).then(sd=>fetchSpU(items,sd,spN,pb)).catch(e=>{var eb=pb==="dashProg"?"dashErr":"spErr";$(eb).textContent='⚠️ '+e.message;$(eb).classList.add('show');$(pb).classList.remove('show');$('spBtn').disabled=false;$('spBtn').innerHTML="🚀 Load Sprint"});
 }
 function fetchSpU(items,sDays,spN,pb){
@@ -1842,7 +1842,7 @@ function gDC(v,n,dk){var ih=teamDaysOff.indexOf(dk)>-1;if(ih&&v>0)return"backgro
 function gDTC(v,n,dk){var ih=teamDaysOff.indexOf(dk)>-1;if(ih&&v>0)return"var(--red)";if(ih)return"var(--text-dim)";var c=capData[n];if(!c||!c.capacityPerDay)return v>0?"var(--green)":"var(--border)";var io=c.daysOff.indexOf(dk)>-1;if(io&&v>0)return"var(--purple)";if(io)return"var(--text-dim)";var r=v/c.capacityPerDay;if(r>=1)return"var(--green)";if(r>=.75)return"var(--amber)";if(r>=.5)return"#f97316";return v>0?"var(--red)":"var(--border)"}
 function rDaily(){var d=spData,days=d.sprintDays||[],tk=tKey(),tt=[],mx=1;for(var x=0;x<days.length;x++)tt.push(0);
   var h='<div style="overflow-x:auto"><table><thead><tr><th style="min-width:140px;position:sticky;left:0;background:var(--bg-base);z-index:2">Assignee</th>';
-  days.forEach(dy=>{var isH=teamDaysOff.indexOf(dy)>-1;h+='<th style="text-align:center;min-width:62px;'+(isH?'background:rgba(239,68,68,.1)':dy===tk?'background:rgba(59,130,246,.08)':'')+'"><div style="font-size:9px;line-height:1.2"><div style="color:'+(isH?'var(--red)':'var(--text-muted)')+';font-weight:600">'+fmtS(dy)+'</div><div style="color:'+(isH?'var(--red)':'var(--text-dark)')+'">'+(isH?'🏖 ':'')+gDow(dy)+'</div></div></th>'});
+  days.forEach(dy=>{var isH=teamDaysOff.indexOf(dy)>-1;var isW=isWE(dy);h+='<th style="text-align:center;min-width:62px;'+(isH?'background:rgba(239,68,68,.1)':isW?'background:rgba(120,120,120,.1)':dy===tk?'background:rgba(59,130,246,.08)':'')+'"><div style="font-size:9px;line-height:1.2"><div style="color:'+(isH?'var(--red)':isW?'var(--text-dark)':'var(--text-muted)')+';font-weight:600">'+fmtS(dy)+'</div><div style="color:'+(isH?'var(--red)':isW?'var(--text-dim)':'var(--text-dark)')+'">'+(isH?'🏖 ':isW?'🔴 ':'')+gDow(dy)+'</div></div></th>'});
   h+='<th style="text-align:center">Total</th></tr></thead><tbody>';
   d.assignees.forEach((a,idx)=>{var hue=idx*47,in2=ini(a.name),rt=0,co=capData[a.name],cl=co?co.capacityPerDay+"h/d":"",lc=co?co.daysOff.filter(doff=>days.indexOf(doff)>-1).length:0;
     h+='<tr><td style="position:sticky;left:0;background:var(--bg-card);z-index:1"><div style="display:flex;align-items:center;gap:6px"><div class="avatar avatar-sm" style="background:hsl('+hue+',60%,45%)">'+in2+'</div><div><span style="font-size:11px;font-weight:600;color:var(--text-primary);white-space:nowrap">'+a.name+'</span>'+(cl?'<div style="font-size:9px;color:var(--text-dim)">'+cl+(lc?' · 🖐'+lc:'')+'</div>':'')+'</div></div></td>';
@@ -1852,7 +1852,7 @@ function rDaily(){var d=spData,days=d.sprintDays||[],tk=tKey(),tt=[],mx=1;for(va
     h+='<td style="text-align:center;font-weight:700;color:var(--accent-light);font-size:12px">'+rt.toFixed(1)+'</td></tr>'});
   var tg=0;tt.forEach(v=>{tg+=v;if(v>mx)mx=v});
   h+='<tr style="border-top:2px solid var(--border);font-weight:700"><td style="position:sticky;left:0;background:var(--bg-card);z-index:1;color:var(--text-muted);font-size:11px">Team Total</td>';
-  tt.forEach((v,n)=>{var isH=teamDaysOff.indexOf(days[n])>-1;h+='<td style="text-align:center;color:'+(v?'var(--accent-light)':'var(--border)')+';font-size:11px;'+(isH?'background:rgba(239,68,68,.08)':days[n]===tk?'background:rgba(59,130,246,.08)':'')+'">'+(v?v.toFixed(1):'-')+'</td>'});
+  tt.forEach((v,n)=>{var isH=teamDaysOff.indexOf(days[n])>-1;var isW=isWE(days[n]);h+='<td style="text-align:center;color:'+(v?'var(--accent-light)':'var(--border)')+';font-size:11px;'+(isH?'background:rgba(239,68,68,.08)':isW?'background:rgba(120,120,120,.08)':days[n]===tk?'background:rgba(59,130,246,.08)':'')+'">'+(v?v.toFixed(1):'-')+'</td>'});
   h+='<td style="text-align:center;color:var(--accent);font-size:13px">'+tg.toFixed(1)+'</td></tr></tbody></table></div>';
   $('dailyView').innerHTML=h}
 function showDP(an,ds){var d=spData;if(!d)return;var a=null;d.assignees.forEach(x=>{if(x.name===an)a=x});if(!a)return;
@@ -1880,7 +1880,7 @@ function togDet(i){var d=$("det"+i),a=$("arr"+i);if(d.classList.contains("hidden
 function swSub(t){curSub=t;$("tabSum").className="sub-tab"+(t==="summary"?" active":"");$("tabDay").className="sub-tab"+(t==="daily"?" active":"");$("summaryView").classList.toggle("hidden",t!=="summary");$("dailyView").classList.toggle("hidden",t!=="daily")}
 function goBack(){$("dashView").classList.add("hidden");$("spLogin").classList.remove("hidden");spData=null;capData={};teamDaysOff=[];allItemsMap={};SP_BASE="";SP_PROJ="";SP_TEAM="";spBuildLink()}
 function loadDemo(){SP_BASE="https://tfs.example.com/tfs/Col";SP_PROJ="Demo";SP_TEAM="Team";
-  var dd=[];var st=new Date("2026-02-09");for(var i=0;i<14;i++){var d=new Date(st.getTime()+i*864e5);if(!isWE(d))dd.push(dKey(d))}
+  var dd=[];var st=new Date("2026-02-09");for(var i=0;i<14;i++){var d=new Date(st.getTime()+i*864e5);dd.push(dKey(d))}
   function rn(t,ds,who){var m={},l=t,editors=["Rahul S","Priya P","Amit K"];ds.forEach((dy,i)=>{if(i===ds.length-1){var r=Math.max(0,Math.round(l*10)/10);var rb=editors[Math.floor(Math.random()*editors.length)];m[dy]={completed:r,remaining:0,items:r?[{id:45201+i,title:"Task #"+(i+1),hours:r,activity:"Dev",type:"Task",stateChange:"",updatedBy:[who||rb],updates:[{ts:dy+"T09:"+String(30+i).padStart(2,"0")+":00",by:who||rb,delta:r}]}]:[]}}else{var v=Math.round(Math.random()*t/ds.length*10)/10,h=Math.min(v,l);var rb=editors[Math.floor(Math.random()*editors.length)];m[dy]={completed:h,remaining:0,items:h?[{id:45201+i,title:"Task #"+(i+1),hours:h,activity:"Dev",type:"Task",stateChange:"",updatedBy:[who||rb],updates:[{ts:dy+"T09:"+String(30+i).padStart(2,"0")+":00",by:who||rb,delta:h}]}]:[]};l-=h}});return m}
   capData={"Rahul S":{capacityPerDay:6,daysOff:["2026-02-12"]},"Priya P":{capacityPerDay:7,daysOff:[]},"Amit K":{capacityPerDay:6,daysOff:["2026-02-18"]}};teamDaysOff=["2026-02-16"];
   function demoRaw(t){return{"System.Title":t.title,"System.State":t.state,"System.WorkItemType":t.type,"System.Tags":t.tags,"System.CreatedBy":t.ownedBy,"System.CommentCount":t.commentCount,"System.Parent":t.parent,"Microsoft.VSTS.Scheduling.OriginalEstimate":t.originalEst,"Microsoft.VSTS.Scheduling.CompletedWork":t.completed,"Microsoft.VSTS.Scheduling.RemainingWork":t.remaining,"Microsoft.VSTS.Common.Activity":t.activity,"Microsoft.VSTS.Common.ActivatedBy":t.activatedBy,"Microsoft.VSTS.Common.ActivatedDate":t.activatedDate,"Microsoft.VSTS.Common.Discipline":t.discipline,"Casepoint.TFS.CustomFields.TaskExecutionType":t.taskExecType}}
