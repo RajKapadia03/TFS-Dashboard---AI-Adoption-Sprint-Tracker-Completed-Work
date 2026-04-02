@@ -13,7 +13,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<meta name="version" content="3.5.0">
+<meta name="version" content="3.6.0">
 <meta name="author" content="&#67;&#68;&#80;">
 <meta name="copyright" content="&#67;&#111;&#112;&#121;&#114;&#105;&#103;&#104;&#116; &#169; &#50;&#48;&#50;&#54; &#67;&#68;&#80;. &#65;&#108;&#108; &#114;&#105;&#103;&#104;&#116;&#115; &#114;&#101;&#115;&#101;&#114;&#118;&#101;&#100;.">
 <meta name="rights" content="&#169; &#50;&#48;&#50;&#54; &#67;&#68;&#80; &#45; &#85;&#110;&#97;&#117;&#116;&#104;&#111;&#114;&#105;&#122;&#101;&#100; &#99;&#111;&#112;&#121;&#105;&#110;&#103; &#112;&#114;&#111;&#104;&#105;&#98;&#105;&#116;&#101;&#100;">
@@ -503,6 +503,10 @@ th.sel-th input[type=checkbox]{accent-color:var(--accent);width:15px;height:15px
 .bug-af-pill .x{cursor:pointer;color:var(--accent);font-weight:900;transition:all .2s}
 .bug-af-pill .x:hover{color:var(--red);transform:scale(1.2)}
 #tabBug{position:relative;contain:layout style}
+.wit-col-ctx{position:fixed;z-index:9999;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;box-shadow:0 8px 24px var(--shadow);padding:4px 0;min-width:160px;display:none;font-size:12px}
+.wit-col-ctx.show{display:block;animation:fadeInUp .15s ease-out}
+.wit-col-ctx-item{padding:8px 16px;cursor:pointer;color:var(--text-primary);display:flex;align-items:center;gap:8px}
+.wit-col-ctx-item:hover{background:rgba(59,130,246,.1);color:var(--accent-light)}
 /* Zoom controls */
 .zoom-controls{display:flex;align-items:center;gap:2px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;padding:2px}
 .zoom-btn{background:none;border:none;color:var(--text-muted);font-size:16px;width:30px;height:30px;cursor:pointer;border-radius:6px;display:flex;align-items:center;justify-content:center;transition:all .2s;font-weight:700}
@@ -814,6 +818,11 @@ th.sel-th input[type=checkbox]{accent-color:var(--accent);width:15px;height:15px
 
         <div style="display:flex;gap:16px;align-items:center;margin-bottom:14px;flex-wrap:wrap">
           <label class="cbox"><input type="checkbox" id="witShowAllDisc" onchange="witFilterTable()"> Include all disciplines</label>
+          <label class="cbox"><input type="checkbox" id="witReqBugOnly" onchange="witFilterTable()"> Req &amp; Bugs Only</label>
+          <div style="display:flex;gap:6px">
+            <button class="export-btn" id="witDevViewBtn" onclick="witToggleDevQA('dev')" style="opacity:.5">Dev View</button>
+            <button class="export-btn" id="witQAViewBtn" onclick="witToggleDevQA('qa')" style="opacity:.5">QA View</button>
+          </div>
           <div style="display:flex;gap:6px">
             <button class="export-btn" onclick="witExpandAll()">▼ Expand All</button>
             <button class="export-btn" onclick="witCollapseAll()">▶ Collapse All</button>
@@ -863,6 +872,11 @@ th.sel-th input[type=checkbox]{accent-color:var(--accent);width:15px;height:15px
         <button class="btn btn-blue" onclick="witApplyColCfg()" style="width:100%">Apply & Close</button>
       </div>
     </div>
+  </div>
+
+  <!-- WIT Column Right-Click Context Menu -->
+  <div class="wit-col-ctx" id="witColCtx">
+    <div class="wit-col-ctx-item" onclick="witCtxHideCol()">🙈 Hide Column</div>
   </div>
 
   <!-- ========== BUG COUNTER ========== -->
@@ -1042,7 +1056,7 @@ th.sel-th input[type=checkbox]{accent-color:var(--accent);width:15px;height:15px
     </div>
   </div>
 
-  <div class="app-footer" id="appFooter" onclick="hFooterClick()" style="cursor:pointer;user-select:none">TFS Dashboard v3.5.0</div>
+  <div class="app-footer" id="appFooter" onclick="hFooterClick()" style="cursor:pointer;user-select:none">TFS Dashboard v3.6.0</div>
 </div>
 
 <!-- Sprint popup -->
@@ -2137,7 +2151,7 @@ var witColsDef=[
   {key:'ownedBy',label:'Owned By',grp:'Core',vis:false,sortKey:'ownedBy',
     ren:function(it){return esc(it._ownedBy||'')},
     sort:function(it){return(it._ownedBy||'').toLowerCase()}},
-  {key:'timeline',label:'Timeline',grp:'Dates',vis:true,sortKey:'timeline',
+  {key:'timeline',label:'Timeline',grp:'Dates',vis:false,sortKey:'timeline',
     ren:function(it){
       if(!it._historyLoaded){
         return'<span style="color:var(--text-dim);font-size:10px;cursor:pointer" onclick="event.stopPropagation();witLoadSingleHistory('+it.id+')">▶ Load</span>';
@@ -2184,14 +2198,57 @@ var witColsDef=[
     ren:function(it){var ta=witCalcTurnaround(it),tc=witTurnaroundClass(ta),tt=witTurnaroundText(ta);return'<span class="turnaround '+tc+'">'+tt+'</span>'},
     sort:function(it){return witCalcTurnaround(it)||9999}},
   {key:'devHours',label:'Dev Hours',grp:'Hours',vis:true,sortKey:'devHours',
-    ren:function(it){var t=it._type.toLowerCase();if(t.indexOf('task')>=0)return'';var h=it._discHours||{};if(!h.devComp&&!h.devEst&&!h.devRem)return'<span style="color:var(--text-dim)">-</span>';return'<div style="font-size:10px;line-height:1.5"><span style="color:var(--green);font-weight:700">'+h.devComp.toFixed(1)+'h</span> <span style="color:var(--text-dim)">done</span><br><span style="color:var(--purple)">'+h.devEst.toFixed(1)+'h</span> <span style="color:var(--text-dim)">est</span><br><span style="color:var(--amber)">'+h.devRem.toFixed(1)+'h</span> <span style="color:var(--text-dim)">left</span></div>'},
+    ren:function(it){var t=it._type.toLowerCase();if(t.indexOf('task')>=0)return'';var h=it._discHours||{};if(!h.devComp&&!h.devEst&&!h.devRem)return'<span style="color:var(--text-dim)">-</span>';return'<div style="font-size:10px;line-height:1.5"><span style="color:var(--green);font-weight:700">'+h.devComp.toFixed(1)+'h</span> <span style="color:var(--text-dim)">completed</span><br><span style="color:var(--purple)">'+h.devEst.toFixed(1)+'h</span> <span style="color:var(--text-dim)">planned</span><br><span style="color:var(--amber)">'+h.devRem.toFixed(1)+'h</span> <span style="color:var(--text-dim)">remaining</span></div>'},
     sort:function(it){return(it._discHours||{}).devComp||0}},
   {key:'testHours',label:'Test Hours',grp:'Hours',vis:true,sortKey:'testHours',
-    ren:function(it){var t=it._type.toLowerCase();if(t.indexOf('task')>=0)return'';var h=it._discHours||{};if(!h.testComp&&!h.testEst&&!h.testRem)return'<span style="color:var(--text-dim)">-</span>';return'<div style="font-size:10px;line-height:1.5"><span style="color:var(--green);font-weight:700">'+h.testComp.toFixed(1)+'h</span> <span style="color:var(--text-dim)">done</span><br><span style="color:var(--purple)">'+h.testEst.toFixed(1)+'h</span> <span style="color:var(--text-dim)">est</span><br><span style="color:var(--amber)">'+h.testRem.toFixed(1)+'h</span> <span style="color:var(--text-dim)">left</span></div>'},
+    ren:function(it){var t=it._type.toLowerCase();if(t.indexOf('task')>=0)return'';var h=it._discHours||{};if(!h.testComp&&!h.testEst&&!h.testRem)return'<span style="color:var(--text-dim)">-</span>';return'<div style="font-size:10px;line-height:1.5"><span style="color:var(--green);font-weight:700">'+h.testComp.toFixed(1)+'h</span> <span style="color:var(--text-dim)">completed</span><br><span style="color:var(--purple)">'+h.testEst.toFixed(1)+'h</span> <span style="color:var(--text-dim)">planned</span><br><span style="color:var(--amber)">'+h.testRem.toFixed(1)+'h</span> <span style="color:var(--text-dim)">remaining</span></div>'},
     sort:function(it){return(it._discHours||{}).testComp||0}},
   {key:'totalHours',label:'Total Hours',grp:'Hours',vis:true,sortKey:'totalHours',
-    ren:function(it){var t=it._type.toLowerCase();if(t.indexOf('task')>=0)return'';var h=it._discHours||{};var tc=h.devComp+h.testComp+h.otherComp,te=h.devEst+h.testEst+h.otherEst,tr=h.devRem+h.testRem+h.otherRem;if(!tc&&!te&&!tr)return'<span style="color:var(--text-dim)">-</span>';return'<div style="font-size:10px;line-height:1.5"><span style="color:var(--green);font-weight:700">'+tc.toFixed(1)+'h</span> <span style="color:var(--text-dim)">done</span><br><span style="color:var(--purple)">'+te.toFixed(1)+'h</span> <span style="color:var(--text-dim)">est</span><br><span style="color:var(--amber)">'+tr.toFixed(1)+'h</span> <span style="color:var(--text-dim)">left</span></div>'},
+    ren:function(it){var t=it._type.toLowerCase();if(t.indexOf('task')>=0)return'';var h=it._discHours||{};var tc=h.devComp+h.testComp+h.otherComp,te=h.devEst+h.testEst+h.otherEst,tr=h.devRem+h.testRem+h.otherRem;if(!tc&&!te&&!tr)return'<span style="color:var(--text-dim)">-</span>';return'<div style="font-size:10px;line-height:1.5"><span style="color:var(--green);font-weight:700">'+tc.toFixed(1)+'h</span> <span style="color:var(--text-dim)">completed</span><br><span style="color:var(--purple)">'+te.toFixed(1)+'h</span> <span style="color:var(--text-dim)">planned</span><br><span style="color:var(--amber)">'+tr.toFixed(1)+'h</span> <span style="color:var(--text-dim)">remaining</span></div>'},
     sort:function(it){var h=it._discHours||{};return h.devComp+h.testComp+h.otherComp}},
+  {key:'devDone',label:'Dev Completed',grp:'Hours Split',vis:false,sortKey:'devDone',
+    ren:function(it){var t=it._type.toLowerCase();if(t.indexOf('task')>=0)return'';var h=it._discHours||{};return h.devComp?'<span style="color:var(--green);font-weight:700;font-size:11px">'+h.devComp.toFixed(1)+'h</span>':'<span style="color:var(--text-dim)">-</span>'},
+    sort:function(it){return(it._discHours||{}).devComp||0}},
+  {key:'devEst',label:'Dev Planned',grp:'Hours Split',vis:false,sortKey:'devEst',
+    ren:function(it){var t=it._type.toLowerCase();if(t.indexOf('task')>=0)return'';var h=it._discHours||{};return h.devEst?'<span style="color:var(--purple);font-size:11px">'+h.devEst.toFixed(1)+'h</span>':'<span style="color:var(--text-dim)">-</span>'},
+    sort:function(it){return(it._discHours||{}).devEst||0}},
+  {key:'devLeft',label:'Dev Remaining',grp:'Hours Split',vis:false,sortKey:'devLeft',
+    ren:function(it){var t=it._type.toLowerCase();if(t.indexOf('task')>=0)return'';var h=it._discHours||{};return h.devRem?'<span style="color:var(--amber);font-size:11px">'+h.devRem.toFixed(1)+'h</span>':'<span style="color:var(--text-dim)">-</span>'},
+    sort:function(it){return(it._discHours||{}).devRem||0}},
+  {key:'testDone',label:'QA Completed',grp:'Hours Split',vis:false,sortKey:'testDone',
+    ren:function(it){var t=it._type.toLowerCase();if(t.indexOf('task')>=0)return'';var h=it._discHours||{};return h.testComp?'<span style="color:var(--green);font-weight:700;font-size:11px">'+h.testComp.toFixed(1)+'h</span>':'<span style="color:var(--text-dim)">-</span>'},
+    sort:function(it){return(it._discHours||{}).testComp||0}},
+  {key:'testEst',label:'QA Planned',grp:'Hours Split',vis:false,sortKey:'testEst',
+    ren:function(it){var t=it._type.toLowerCase();if(t.indexOf('task')>=0)return'';var h=it._discHours||{};return h.testEst?'<span style="color:var(--purple);font-size:11px">'+h.testEst.toFixed(1)+'h</span>':'<span style="color:var(--text-dim)">-</span>'},
+    sort:function(it){return(it._discHours||{}).testEst||0}},
+  {key:'testLeft',label:'QA Remaining',grp:'Hours Split',vis:false,sortKey:'testLeft',
+    ren:function(it){var t=it._type.toLowerCase();if(t.indexOf('task')>=0)return'';var h=it._discHours||{};return h.testRem?'<span style="color:var(--amber);font-size:11px">'+h.testRem.toFixed(1)+'h</span>':'<span style="color:var(--text-dim)">-</span>'},
+    sort:function(it){return(it._discHours||{}).testRem||0}},
+  {key:'resolvedDate',label:'Resolved Date',grp:'State Dates',vis:false,sortKey:'resolvedDate',
+    ren:function(it){return it._resolvedDate?'<span style="color:var(--text-secondary);font-size:10px">'+witFmtDate(it._resolvedDate)+'</span>':'<span style="color:var(--text-dim)">-</span>'},
+    sort:function(it){return it._resolvedDate||'9999'}},
+  {key:'closedDate',label:'Closed Date',grp:'State Dates',vis:false,sortKey:'closedDate',
+    ren:function(it){return it._closedDate?'<span style="color:var(--text-secondary);font-size:10px">'+witFmtDate(it._closedDate)+'</span>':'<span style="color:var(--text-dim)">-</span>'},
+    sort:function(it){return it._closedDate||'9999'}},
+  {key:'inQADate',label:'In QA Date',grp:'State Dates',vis:false,sortKey:'inQADate',
+    ren:function(it){
+      if(!it._historyLoaded||!it._stateHistory)return'<span style="color:var(--text-dim)">-</span>';
+      var qaEntry=it._stateHistory.filter(function(e){return e.field==='Status'&&e.to&&e.to.toLowerCase().indexOf('qa')>=0}).sort(function(a,b){return(b.date||'').localeCompare(a.date||'')});
+      if(!qaEntry.length)return'<span style="color:var(--text-dim)">-</span>';
+      return'<span style="color:var(--text-secondary);font-size:10px">'+witFmtDate(qaEntry[0].date)+'</span>'},
+    sort:function(it){
+      if(!it._stateHistory)return'9999';
+      var qa=it._stateHistory.filter(function(e){return e.field==='Status'&&e.to&&e.to.toLowerCase().indexOf('qa')>=0});
+      return qa.length?qa[qa.length-1].date:'9999'}},
+  {key:'daysResolved',label:'Days (Resolved→Closed)',grp:'State Dates',vis:false,sortKey:'daysResolved',
+    ren:function(it){
+      if(!it._resolvedDate||!it._closedDate)return'<span style="color:var(--text-dim)">-</span>';
+      var d=Math.round((new Date(it._closedDate)-new Date(it._resolvedDate))/86400000);
+      var clr=d<=2?'var(--green)':d<=5?'var(--amber)':'var(--red-light)';
+      return'<span style="color:'+clr+';font-weight:700;font-size:13px">'+d+'</span>'},
+    sort:function(it){
+      if(!it._resolvedDate||!it._closedDate)return 9999;
+      return Math.round((new Date(it._closedDate)-new Date(it._resolvedDate))/86400000)}},
   {key:'history',label:'History',grp:'Dates',vis:true,wide:true,sortKey:'history',
     ren:function(it){
       if(!it._historyLoaded){
@@ -2251,7 +2308,7 @@ var witColsDef=[
     ren:function(it){return esc(it._iterationPath||'')},
     sort:function(it){return(it._iterationPath||'').toLowerCase()}},
   {key:'tags',label:'Tags',grp:'Detail',vis:false,sortKey:'tags',
-    ren:function(it){var f=it.fields||{};return'<span style="color:var(--text-dim)">'+esc(f['System.Tags']||'-')+'</span>'},
+    ren:function(it){var f=it.fields||{};var rbOn=$('witReqBugOnly')&&$('witReqBugOnly').checked;if(rbOn&&it._type.toLowerCase().indexOf('bug')<0)return'';return'<span style="color:var(--text-dim)">'+esc(f['System.Tags']||'-')+'</span>'},
     sort:function(it){var f=it.fields||{};return(f['System.Tags']||'').toLowerCase()}}
 ];
 
@@ -2721,6 +2778,27 @@ function witInitItemProps(items){
     item._ownedBy=(obRaw&&typeof obRaw==='object'?obRaw.displayName:obRaw)||'';
     item._iterationPath=f['System.IterationPath']||'';
     item._parentId=f['System.Parent']||null;
+    // For items without System.Parent, find parent via Hierarchy-Reverse relation
+    if(!item._parentId&&item.relations&&item.relations.length){
+      for(var ri=0;ri<item.relations.length;ri++){
+        var rel=item.relations[ri];
+        if(rel.rel==='System.LinkTypes.Hierarchy-Reverse'&&rel.url){
+          var m=rel.url.match(/\/(\d+)$/);
+          if(m)item._parentId=parseInt(m[1],10);
+          break;
+        }
+      }
+    }
+    // Extract Related link IDs for Bug-Requirement association
+    item._relatedIds=[];
+    if(item.relations&&item.relations.length){
+      item.relations.forEach(function(rel){
+        if(rel.rel==='System.LinkTypes.Related'&&rel.url){
+          var m=rel.url.match(/\/(\d+)$/);
+          if(m)item._relatedIds.push(parseInt(m[1],10));
+        }
+      });
+    }
     item._tags=(f['System.Tags']||'').split(';').map(function(t){return t.trim()}).filter(Boolean);
     item._stateHistory=null; // null = not loaded yet
     item._historyLoaded=false;
@@ -2892,11 +2970,14 @@ function witGetFiltered(){
       }
     });
   }
+  var reqBugOnly=$('witReqBugOnly')&&$('witReqBugOnly').checked;
   return witAllItems.filter(function(it){
     var _tl=it._type.toLowerCase();
     if(_tl.indexOf('feature')>=0||_tl.indexOf('test case')>=0||_tl.indexOf('test plan')>=0||_tl.indexOf('test suite')>=0)return false;
+    // Req & Bugs Only: exclude Tasks entirely
+    if(reqBugOnly&&_tl==='task')return false;
     // Discipline filter: for tasks, only show Dev/Test; for parents, only show if they have Dev/Test children
-    if(!showAllDisc){
+    if(!showAllDisc&&!reqBugOnly){
       var t=it._type.toLowerCase();
       if(t==='task'){
         var disc=(it.fields&&it.fields['Microsoft.VSTS.Common.Discipline']||'').toLowerCase();
@@ -2948,6 +3029,12 @@ function witDefaultSort(a,b){
 }
 
 function witRenderResults(){
+  var rbOnly=$('witReqBugOnly')&&$('witReqBugOnly').checked;
+  witCols.forEach(function(c){
+    if(c.key==='assignedTo'||c.key==='history'||c.key==='state')c.vis=!rbOnly;
+    if(c.key==='tags')c.vis=rbOnly;
+  });
+  $('witSummaryCards').style.display=rbOnly?'none':'';
   var items=witGetFiltered();
   if(witSortCol){
     items.sort(function(a,b){
@@ -3065,12 +3152,13 @@ function witRenderTable(items){
   var thead='<tr><th class="sel-th"><input type="checkbox" id="witSelAll" onclick="witToggleSelectAll(this.checked)" title="Select All"></th>';
   visCols.forEach(function(c){
     var sc=witSortCol===c.key?(' sorted-'+(witSortDir==='asc'?'asc':'desc')):'';
-    thead+='<th class="'+sc+'" onclick="witSortBy(\''+c.key+'\')"'+(c.wide?' style="min-width:400px"':'')+'>'+esc(c.label)+' <span class="sort-icon"></span></th>';
+    thead+='<th class="'+sc+'" onclick="witSortBy(\''+c.key+'\')" oncontextmenu="witColCtxShow(event,\''+c.key+'\')"'+(c.wide?' style="min-width:400px"':'')+'>'+esc(c.label)+' <span class="sort-icon"></span></th>';
   });
   thead+='</tr>';
   $('witDataHead').innerHTML=thead;
 
   // Build parent-child hierarchy
+  var reqBugOnly=$('witReqBugOnly')&&$('witReqBugOnly').checked;
   var itemMap={};
   items.forEach(function(it){itemMap[it.id]=it});
   var childrenOf={};
@@ -3080,9 +3168,42 @@ function witRenderTable(items){
       childrenOf[it._parentId].push(it);
     }
   });
+  // In Req & Bugs Only mode, associate Bugs with Requirements via Related links
+  var bugNested={};
+  if(reqBugOnly){
+    // Build a set of Requirement IDs
+    var reqIds=new Set();
+    items.forEach(function(it){
+      var t=it._type.toLowerCase();
+      if(t.indexOf('requirement')>=0||t.indexOf('product backlog')>=0||t.indexOf('user story')>=0)reqIds.add(it.id);
+    });
+    // For each Bug, find if any of its Related links point to a Requirement
+    items.forEach(function(it){
+      if(it._type.toLowerCase().indexOf('bug')<0)return;
+      // First check System.Parent
+      if(it._parentId&&reqIds.has(it._parentId)){
+        if(!childrenOf[it._parentId])childrenOf[it._parentId]=[];
+        if(!childrenOf[it._parentId].some(function(c){return c.id===it.id}))childrenOf[it._parentId].push(it);
+        bugNested[it.id]=true;
+        return;
+      }
+      // Then check Related links
+      var relIds=it._relatedIds||[];
+      for(var i=0;i<relIds.length;i++){
+        if(reqIds.has(relIds[i])){
+          if(!childrenOf[relIds[i]])childrenOf[relIds[i]]=[];
+          if(!childrenOf[relIds[i]].some(function(c){return c.id===it.id}))childrenOf[relIds[i]].push(it);
+          bugNested[it.id]=true;
+          break;
+        }
+      }
+    });
+  }
   var topLevel=items.filter(function(it){
     var t=it._type.toLowerCase();
     if(t.indexOf('task')>=0&&it._parentId&&itemMap[it._parentId])return false;
+    // In Req & Bugs Only mode, hide Bugs that are nested under a Requirement
+    if(reqBugOnly&&bugNested[it.id])return false;
     return true;
   });
 
@@ -3137,10 +3258,39 @@ function witRenderTree(items){
     }
   });
   // Top-level: Requirements and Bugs only (no Features), exclude items that are children of another visible item
+  var reqBugOnly=$('witReqBugOnly')&&$('witReqBugOnly').checked;
+  // In Req & Bugs Only mode, associate Bugs with Requirements via Related links
+  var bugNested={};
+  if(reqBugOnly){
+    var reqIds=new Set();
+    items.forEach(function(it){
+      var t=it._type.toLowerCase();
+      if(t.indexOf('requirement')>=0||t.indexOf('product backlog')>=0||t.indexOf('user story')>=0)reqIds.add(it.id);
+    });
+    items.forEach(function(it){
+      if(it._type.toLowerCase().indexOf('bug')<0)return;
+      if(it._parentId&&reqIds.has(it._parentId)){
+        if(!childrenOf[it._parentId])childrenOf[it._parentId]=[];
+        if(!childrenOf[it._parentId].some(function(c){return c.id===it.id}))childrenOf[it._parentId].push(it);
+        bugNested[it.id]=true;
+        return;
+      }
+      var relIds=it._relatedIds||[];
+      for(var i=0;i<relIds.length;i++){
+        if(reqIds.has(relIds[i])){
+          if(!childrenOf[relIds[i]])childrenOf[relIds[i]]=[];
+          if(!childrenOf[relIds[i]].some(function(c){return c.id===it.id}))childrenOf[relIds[i]].push(it);
+          bugNested[it.id]=true;
+          break;
+        }
+      }
+    });
+  }
   var topLevel=items.filter(function(it){
     var t=it._type.toLowerCase();
     if(t.indexOf('feature')>=0)return false;
     if(t.indexOf('task')>=0&&it._parentId&&itemMap[it._parentId])return false;
+    if(reqBugOnly&&bugNested[it.id])return false;
     return true;
   });
 
@@ -3342,6 +3492,16 @@ function witGetColText(c,it){
     case'devHours':var dh=it._discHours||{};return dh.devComp?dh.devComp.toFixed(1):'';
     case'testHours':var th2=it._discHours||{};return th2.testComp?th2.testComp.toFixed(1):'';
     case'totalHours':var tth=it._discHours||{};var ttv=tth.devComp+tth.testComp+tth.otherComp;return ttv?ttv.toFixed(1):'';
+    case'devDone':var dd1=it._discHours||{};return dd1.devComp?dd1.devComp.toFixed(1):'';
+    case'devEst':var de1=it._discHours||{};return de1.devEst?de1.devEst.toFixed(1):'';
+    case'devLeft':var dl1=it._discHours||{};return dl1.devRem?dl1.devRem.toFixed(1):'';
+    case'testDone':var td1=it._discHours||{};return td1.testComp?td1.testComp.toFixed(1):'';
+    case'testEst':var te1=it._discHours||{};return te1.testEst?te1.testEst.toFixed(1):'';
+    case'testLeft':var tl1=it._discHours||{};return tl1.testRem?tl1.testRem.toFixed(1):'';
+    case'closedDate':return it._closedDate?new Date(it._closedDate).toLocaleString():'';
+    case'resolvedDate':return it._resolvedDate?new Date(it._resolvedDate).toLocaleString():'';
+    case'inQADate':var qaH=it._stateHistory||[];var qaE=qaH.filter(function(e){return e.field==='Status'&&e.to&&e.to.toLowerCase().indexOf('qa')>=0}).sort(function(a,b){return(b.date||'').localeCompare(a.date||'')});return qaE.length?new Date(qaE[0].date).toLocaleString():'';
+    case'daysResolved':if(!it._resolvedDate||!it._closedDate)return'';return''+Math.round((new Date(it._closedDate)-new Date(it._resolvedDate))/86400000);
     case'history':var sh=it._stateHistory||[];return sh.map(function(e){return'State → '+e.to+' '+new Date(e.date).toLocaleString()}).join(' | ');
     default:
       if(c.field){return witTfsFieldVal(it,c.field)}
@@ -3417,6 +3577,70 @@ function witClearFilters(){
   witMsClearAll('witMsAssigned');
   witMsClearAll('witMsOwnedBy');
   witMsClearAll('witMsTags');
+  if($('witReqBugOnly'))$('witReqBugOnly').checked=false;
+  witRenderResults();
+}
+
+// ===== WIT Column Right-Click Hide =====
+var _witCtxColKey=null;
+function witColCtxShow(e,key){
+  e.preventDefault();e.stopPropagation();
+  _witCtxColKey=key;
+  var menu=$('witColCtx');
+  menu.style.left=e.clientX+'px';
+  menu.style.top=e.clientY+'px';
+  menu.classList.add('show');
+  document.addEventListener('click',witColCtxClose,{once:true});
+}
+function witColCtxClose(){$('witColCtx').classList.remove('show');_witCtxColKey=null}
+function witCtxHideCol(){
+  if(!_witCtxColKey)return;
+  var col=witCols.find(function(c){return c.key===_witCtxColKey});
+  if(col)col.vis=false;
+  $('witColCtx').classList.remove('show');
+  _witCtxColKey=null;
+  witRenderResults();
+}
+
+// ===== WIT Dev/QA View toggle =====
+var witDevQAMode=null;// null=default, 'dev', 'qa'
+function witToggleDevQA(mode){
+  if(witDevQAMode===mode)witDevQAMode=null;// toggle off
+  else witDevQAMode=mode;
+  $('witDevViewBtn').style.opacity=witDevQAMode==='dev'?'1':'.5';
+  $('witDevViewBtn').style.background=witDevQAMode==='dev'?'var(--accent)':'';
+  $('witQAViewBtn').style.opacity=witDevQAMode==='qa'?'1':'.5';
+  $('witQAViewBtn').style.background=witDevQAMode==='qa'?'var(--accent)':'';
+  // Define which columns each mode shows/hides
+  var devCols=['devDone','devEst','devLeft'];
+  var qaCols=['testDone','testEst','testLeft','inQADate'];
+  var dateCols=['closedDate','resolvedDate','daysResolved'];
+  var defaultHide=['devDone','devEst','devLeft','testDone','testEst','testLeft','closedDate','resolvedDate','inQADate','daysResolved'];
+  var defaultShow=['devHours','testHours','totalHours','timeline'];
+  if(!witDevQAMode){
+    // Reset to defaults
+    witCols.forEach(function(c){
+      if(defaultHide.indexOf(c.key)>=0)c.vis=false;
+      if(c.key==='devHours'||c.key==='testHours'||c.key==='totalHours')c.vis=true;
+      if(c.key==='timeline')c.vis=false;
+    });
+  }else if(witDevQAMode==='dev'){
+    witCols.forEach(function(c){
+      if(devCols.indexOf(c.key)>=0)c.vis=true;
+      else if(qaCols.indexOf(c.key)>=0)c.vis=false;
+      if(dateCols.indexOf(c.key)>=0)c.vis=true;
+      if(c.key==='devHours'||c.key==='testHours'||c.key==='totalHours')c.vis=false;
+      if(c.key==='timeline')c.vis=false;
+    });
+  }else if(witDevQAMode==='qa'){
+    witCols.forEach(function(c){
+      if(qaCols.indexOf(c.key)>=0)c.vis=true;
+      else if(devCols.indexOf(c.key)>=0)c.vis=false;
+      if(dateCols.indexOf(c.key)>=0)c.vis=true;
+      if(c.key==='devHours'||c.key==='testHours'||c.key==='totalHours')c.vis=false;
+      if(c.key==='timeline')c.vis=false;
+    });
+  }
   witRenderResults();
 }
 
@@ -3470,7 +3694,7 @@ function witHideErr(){$('witErrBox').classList.remove('show')}
 })();
 console.log('%c\u26A0\uFE0F COPYRIGHT NOTICE \u26A0\uFE0F','font-size:20px;font-weight:bold;color:#ef4444;');
 console.log('%cTFS Dashboard\n'+atob('TWFkZSBieQ==')+' '+atob('Q0RQ')+'\nCopyright \u00A9 2026 '+atob('Q0RQ')+'. All rights reserved.\n\nUnauthorized copying, modification, distribution, or use of this software is strictly prohibited.','font-size:14px;color:#60a5fa;');
-document.addEventListener('contextmenu',function(e){e.preventDefault();console.log('%c\u26A0\uFE0F Right-click disabled - Copyright \u00A9 2026 '+atob('Q0RQ'),'color:#ef4444;font-weight:bold;')});
+document.addEventListener('contextmenu',function(e){if(e.target.closest&&e.target.closest('#witDataHead th'))return;e.preventDefault();console.log('%c\u26A0\uFE0F Right-click disabled - Copyright \u00A9 2026 '+atob('Q0RQ'),'color:#ef4444;font-weight:bold;')});
 document.addEventListener('keydown',function(e){if(e.keyCode===123||(e.ctrlKey&&e.shiftKey&&(e.keyCode===73||e.keyCode===74))||(e.ctrlKey&&e.keyCode===85)){e.preventDefault();return false}});
 setInterval(function(){if(!window._cdp_cr||atob(window._cdp_cr)!=='CDP|2026|\u00A9'){console.error('\u26A0\uFE0F COPYRIGHT DATA TAMPERING DETECTED')}},30000);
 // ===== DEVTOOLS DETECTION & BLOCK =====
