@@ -13,7 +13,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<meta name="version" content="3.4.0">
+<meta name="version" content="3.5.0">
 <meta name="author" content="&#67;&#68;&#80;">
 <meta name="copyright" content="&#67;&#111;&#112;&#121;&#114;&#105;&#103;&#104;&#116; &#169; &#50;&#48;&#50;&#54; &#67;&#68;&#80;. &#65;&#108;&#108; &#114;&#105;&#103;&#104;&#116;&#115; &#114;&#101;&#115;&#101;&#114;&#118;&#101;&#100;.">
 <meta name="rights" content="&#169; &#50;&#48;&#50;&#54; &#67;&#68;&#80; &#45; &#85;&#110;&#97;&#117;&#116;&#104;&#111;&#114;&#105;&#122;&#101;&#100; &#99;&#111;&#112;&#121;&#105;&#110;&#103; &#112;&#114;&#111;&#104;&#105;&#98;&#105;&#116;&#101;&#100;">
@@ -528,13 +528,17 @@ th.sel-th input[type=checkbox]{accent-color:var(--accent);width:15px;height:15px
 .console-toggle-btn:hover{border-color:var(--accent);color:var(--accent)}
 .console-toggle-btn .console-dot{position:absolute;top:3px;right:3px;width:6px;height:6px;border-radius:50%;background:var(--red);display:none}
 .console-toggle-btn.has-errors .console-dot{display:block;animation:pulseGlow 2s ease-in-out infinite}
+/* Storm overlay — canvas-based for performance */
+.storm-canvas{position:fixed;inset:0;z-index:99999;cursor:pointer}
+.storm-text-el{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:100000;font-size:min(80px,8vw);font-weight:900;color:#fff;text-shadow:0 0 40px rgba(100,149,237,.8),0 0 80px rgba(100,149,237,.4),0 0 120px rgba(59,130,246,.3);opacity:0;letter-spacing:-.03em;white-space:nowrap;font-family:Inter,system-ui,sans-serif;pointer-events:none}
+@keyframes thunderReveal{0%{opacity:0;transform:translate(-50%,-50%) scale(1.8);filter:blur(20px)}20%{opacity:1;transform:translate(-50%,-50%) scale(1);filter:blur(0)}70%{opacity:1;transform:translate(-50%,-50%) scale(1);filter:blur(0)}100%{opacity:0;transform:translate(-50%,-50%) scale(.95);filter:blur(8px)}}
 </style>
 </head>
 <body data-author="Q0RQ" data-cr="Q29weXJpZ2h0IMKpIDIwMjYgQ0RQLiBBbGwgcmlnaHRzIHJlc2VydmVkLg==" data-lic="VW5hdXRob3JpemVkIGNvcHlpbmcsIG1vZGlmaWNhdGlvbiwgb3IgZGlzdHJpYnV0aW9uIHByb2hpYml0ZWQu">
 
 <div class="header">
   <div class="header-left">
-    <div class="logo">⚡</div>
+    <div class="logo" onclick="stormStart()" style="cursor:pointer" title="⚡ Unleash the storm">⚡</div>
     <div><h1>TFS Dashboard</h1><p>AI Adoption · Sprint Tracker · Completed Work · Work Item Timeline · Bug Counter</p></div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
@@ -1038,7 +1042,7 @@ th.sel-th input[type=checkbox]{accent-color:var(--accent);width:15px;height:15px
     </div>
   </div>
 
-  <div class="app-footer" id="appFooter" onclick="hFooterClick()" style="cursor:pointer;user-select:none">TFS Dashboard v3.4.0</div>
+  <div class="app-footer" id="appFooter" onclick="hFooterClick()" style="cursor:pointer;user-select:none">TFS Dashboard v3.5.0</div>
 </div>
 
 <!-- Sprint popup -->
@@ -1112,6 +1116,8 @@ var _pat='';
 try{_pat=atob(localStorage.getItem('tfs_pat_k')||'')}catch(e){}
 if(_pat)document.addEventListener('DOMContentLoaded',()=>{$('patInput').value=_pat;$('connLabel').textContent='PAT loaded from cache';setTimeout(function(){aiLoadProjects();spLoadProjects();cwLoadTeams()},100)});
 function savePAT(){try{localStorage.setItem('tfs_pat_k',btoa(getPAT()))}catch(e){}}
+function getSavedTeam(){try{return localStorage.getItem('tfs_team')||'Custom Data Parsing'}catch(e){return'Custom Data Parsing'}}
+function saveTeam(name){if(typeof _teamSyncing!=='undefined'&&_teamSyncing)return;try{localStorage.setItem('tfs_team',name||'')}catch(e){}}
 function clearPAT(){$('patInput').value='';try{localStorage.removeItem('tfs_pat_k')}catch(e){}$('connDot').classList.remove('ok');$('connLabel').textContent='PAT cleared'}
 function $(id){return document.getElementById(id)}
 function getPAT(){return $('patInput').value.trim()}
@@ -1121,9 +1127,23 @@ var witProjectsLoaded=false,aiProjectsInit=false;
 function switchMainTab(t){curTab=t;document.querySelectorAll('.main-tab').forEach(function(b,i){b.classList.toggle('active',['ai','sprint','cw','wit','bug'][i]===t)});
 ['tabAI','tabSprint','tabCW','tabWIT','tabBug'].forEach(function(id){var el=$(id);el.style.display='none';el.classList.remove('active')});
 var map={ai:'tabAI',sprint:'tabSprint',cw:'tabCW',wit:'tabWIT',bug:'tabBug'};$(map[t]).style.display='block';$(map[t]).classList.add('active');
-if(t==='ai'){if(!aiProjectsInit&&getPAT()){aiProjectsInit=true;aiLoadProjects()}}
-if(t==='wit'){if(!witProjectsLoaded){witProjectsLoaded=true;witLoadProjects()}}
-if(t==='bug'){if(!bugLoaded){bugLoaded=true;bugLoadProjects()}bugInitDotGrid()}else{if(typeof bugStopDotGrid==='function')bugStopDotGrid()}}
+if(t==='ai'){if(!aiProjectsInit&&getPAT()){aiProjectsInit=true;aiLoadProjects()}else{_syncTeamDD('aiTeamDD',aiOnTeamChange)}}
+if(t==='sprint'){_syncTeamDD('spTeamDD',spOnTeamChange)}
+if(t==='cw'){_syncTeamDD('cwTeamDD',cwOnTeamChange)}
+if(t==='wit'){if(!witProjectsLoaded){witProjectsLoaded=true;witLoadProjects()}else{_syncTeamDD('witTeamDD',witOnTeamChange)}}
+if(t==='bug'){if(!bugLoaded){bugLoaded=true;bugLoadProjects()}else{_syncTeamDD('bugTeamDD',bugOnTeamChange)}bugInitDotGrid()}else{if(typeof bugStopDotGrid==='function')bugStopDotGrid()}}
+// Sync dropdown value AND trigger onTeamChange to reload iterations/areas
+var _teamSyncing=false;
+function _syncTeamDD(ddId,onChangeFn){
+  var saved=getSavedTeam();if(!saved||_teamSyncing)return;
+  var dd=$(ddId);if(!dd)return;
+  if(dd.value===saved)return;// already correct, data already loaded
+  var found=false;
+  for(var i=0;i<dd.options.length;i++){if(dd.options[i].value===saved){found=true;break}}
+  if(!found)return;
+  dd.value=saved;
+  if(onChangeFn){_teamSyncing=true;try{var r=onChangeFn();if(r&&r.then)r.then(function(){_teamSyncing=false}).catch(function(){_teamSyncing=false});else setTimeout(function(){_teamSyncing=false},200)}catch(e){_teamSyncing=false}}
+}
 var _fClk=0,_fTmr=null,_bugUnlocked=false;
 function hFooterClick(){_fClk++;if(_fTmr)clearTimeout(_fTmr);_fTmr=setTimeout(function(){_fClk=0},2000);
   if(_fClk>=5){_fClk=0;
@@ -1305,11 +1325,12 @@ async function aiOnProjChange(){
     var d=await tfsGet(aiGetBase()+'/_apis/projects/'+encodeURIComponent(proj)+'/teams?api-version=2.0&$top=200');
     var list=(d.value||[]).sort(function(a,b){return a.name.localeCompare(b.name)});
     $('aiTeamDD').innerHTML='<option value="">-- Select Team --</option>'+list.map(function(t){return'<option value="'+esc(t.name)+'">'+esc(t.name)+'</option>'}).join('');
-    if(list.some(function(t){return t.name==='Custom Data Parsing'})){$('aiTeamDD').value='Custom Data Parsing';aiOnTeamChange()}
+    var _aiSavedTeam=getSavedTeam();if(list.some(function(t){return t.name===_aiSavedTeam})){$('aiTeamDD').value=_aiSavedTeam;aiOnTeamChange()}
   }catch(e){$('aiTeamDD').innerHTML='<option>Failed</option>';alert(e.message)}
 }
 async function aiOnTeamChange(){
   var proj=aiGetProj(),team=$('aiTeamDD').value;aiTeamAreas=[];
+  if(team)saveTeam(team);
   if(!proj||!team||!getPAT())return;
   try{
     var r=await fetch(aiGetBase()+'/'+encodeURIComponent(proj)+'/'+encodeURIComponent(team)+'/_apis/work/teamsettings/teamfieldvalues?api-version=3.0',{headers:getHdrs()});
@@ -1555,10 +1576,11 @@ function spOnProjChange(){
   tfsGet(spGetBase()+'/_apis/projects/'+encodeURIComponent(proj)+'/teams?api-version=2.0&$top=200').then(function(d){
     var list=(d.value||[]).sort(function(a,b){return a.name.localeCompare(b.name)});
     $('spTeamDD').innerHTML='<option value="">-- Select Team --</option>'+list.map(function(t){return'<option value="'+esc(t.name)+'">'+esc(t.name)+'</option>'}).join('');
-    if(list.some(function(t){return t.name==='Custom Data Parsing'})){$('spTeamDD').value='Custom Data Parsing';spOnTeamChange()}
+    var _spSavedTeam=getSavedTeam();if(list.some(function(t){return t.name===_spSavedTeam})){$('spTeamDD').value=_spSavedTeam;spOnTeamChange()}
   }).catch(function(e){$('spTeamDD').innerHTML='<option>Failed</option>';alert(e.message)})}
 function spOnTeamChange(){
   var proj=$('spProjDD').value,team=$('spTeamDD').value;
+  if(team)saveTeam(team);
   $('spIterDD').innerHTML='<option>Loading...</option>';spBuildLink();
   if(!proj||!team){$('spIterDD').innerHTML='<option value="">-- Select team first --</option>';return}
   if(!getPAT()){alert('Enter PAT');return}
@@ -1982,10 +2004,11 @@ async function cwLoadTeams(){
     if(!r.ok)throw new Error('API '+r.status);var d=await r.json();
     var list=(d.value||[]).sort(function(a,b){return a.name.localeCompare(b.name)});
     dd.innerHTML='<option value="">All Teams (no filter)</option>'+list.map(function(t){return'<option value="'+esc(t.name)+'">'+esc(t.name)+'</option>'}).join('');
-    if(list.some(function(t){return t.name==='Custom Data Parsing'})){dd.value='Custom Data Parsing';await cwOnTeamChange()}
+    var _cwSavedTeam=getSavedTeam();if(list.some(function(t){return t.name===_cwSavedTeam})){dd.value=_cwSavedTeam;await cwOnTeamChange()}
   }catch(e){dd.innerHTML='<option>Failed</option>';alert(e.message)}}
 async function cwOnTeamChange(){
   var team=$('cwTeamDD').value;cwTeamAreas=[];
+  if(team)saveTeam(team);
   if(!team||!getPAT())return;
   try{var r=await fetch(cwGetBase()+'/'+encodeURIComponent(team)+'/_apis/work/teamsettings/teamfieldvalues?api-version=3.0',{headers:getHdrs()});
     if(r.ok){var d=await r.json();cwTeamAreas=(d.values||[]).map(function(v){return v.value})}
@@ -2555,13 +2578,14 @@ async function witLoadTeams(proj){
     list.forEach(function(t){
       var o=document.createElement('option');o.value=t.name;o.textContent=t.name;dd.appendChild(o);
     });
-    if(list.some(function(t){return t.name==='Custom Data Parsing'})){dd.value='Custom Data Parsing';await witOnTeamChange()}
+    var _witSavedTeam=getSavedTeam();if(list.some(function(t){return t.name===_witSavedTeam})){dd.value=_witSavedTeam;await witOnTeamChange()}
     witHideProg();
   }catch(e){dd.innerHTML='<option>Failed</option>';witShowErr(e.message)}
 }
 
 async function witOnTeamChange(){
   var proj=$('witProjDD').value,team=$('witTeamDD').value;
+  if(team)saveTeam(team);
   if(!proj||!team)return;
   var dd=$('witIterDD');dd.innerHTML='<option>Loading...</option>';
   try{
@@ -2949,28 +2973,50 @@ function witGetSortVal(item,col){
 var _witSummaryItems=[];
 function witRenderSummary(items){
   _witSummaryItems=items;
-  var total=items.length,bugs=0,reqs=0,tasks=0,resolved=0,closedReqs=0,closedBugs=0,closedTasks=0;
+  // Count by type and state (use current state, not date fields)
+  var cats={req:{label:'Requirements',cls:'green',filter:'req',states:{}},bug:{label:'Bugs',cls:'red',filter:'bug',states:{}},task:{label:'Tasks',cls:'amber',filter:'task',states:{}}};
+  var stateOrder=['Active','New','Proposed','Resolved','Closed','Removed'];
+  var total=items.length;
   items.forEach(function(it){
     var t=it._type.toLowerCase();
-    var isReq=t.indexOf('requirement')>=0||t.indexOf('product backlog')>=0||t.indexOf('user story')>=0;
-    var isBug=t.indexOf('bug')>=0;
-    var isTask=t==='task';
-    if(isBug)bugs++;else if(isTask)tasks++;else if(isReq)reqs++;
-    if(it._resolvedDate)resolved++;
-    if(it._closedDate){if(isReq)closedReqs++;else if(isBug)closedBugs++;else if(isTask)closedTasks++}
+    var cat=null;
+    if(t.indexOf('requirement')>=0||t.indexOf('product backlog')>=0||t.indexOf('user story')>=0)cat='req';
+    else if(t.indexOf('bug')>=0)cat='bug';
+    else if(t==='task')cat='task';
+    if(!cat)return;
+    var st=it._state||'Other';
+    cats[cat].states[st]=(cats[cat].states[st]||0)+1;
   });
-  var closedTotal=closedReqs+closedBugs+closedTasks;
-  function sc(label,val,cls,filter){return'<div class="wit-scard" style="cursor:pointer" onclick="witShowSummaryPopup(\''+filter+'\')"><h3>'+label+'</h3><div class="val '+cls+'">'+val+'</div></div>'}
-  $('witSummaryCards').innerHTML=
-    sc('Total',total,'blue','all')+
-    sc('Requirements',reqs,'green','req')+
-    sc('Bugs',bugs,'red','bug')+
-    sc('Tasks',tasks,'amber','task')+
-    sc('Resolved',resolved,'amber','resolved')+
-    sc('Closed',closedTotal,'green','closed')+
-    sc('Closed Reqs',closedReqs,'green','closed_req')+
-    sc('Closed Bugs',closedBugs,'red','closed_bug')+
-    sc('Closed Tasks',closedTasks,'amber','closed_task');
+  function catTotal(c){var s=0;for(var k in c.states)s+=c.states[k];return s}
+  function stBadge(st,cnt){if(!cnt)return'<span style="color:var(--text-dim);font-size:11px">0</span>';
+    var clr='var(--text-muted)';var sl=st.toLowerCase();
+    if(sl==='active'||sl==='in progress'||sl==='committed')clr='var(--accent-light)';
+    else if(sl==='resolved')clr='var(--amber)';
+    else if(sl==='closed'||sl==='done')clr='var(--green)';
+    else if(sl==='new'||sl==='proposed'||sl==='to do')clr='var(--purple)';
+    return'<span style="color:'+clr+';font-weight:700;font-size:13px;cursor:pointer" onclick="witShowSummaryPopup(\'state_'+st+'\')">'+cnt+'</span>'}
+  function catCard(key,c){
+    var ct=catTotal(c);
+    // Collect states that exist in this category + ensure standard states shown
+    var allSt={};stateOrder.forEach(function(s){allSt[s]=0});for(var k in c.states)allSt[k]=c.states[k];
+    // Only show states with count > 0 or in stateOrder
+    var stEntries=[];
+    stateOrder.forEach(function(s){stEntries.push({st:s,cnt:allSt[s]||0})});
+    for(var k in allSt){if(stateOrder.indexOf(k)<0&&allSt[k]>0)stEntries.push({st:k,cnt:allSt[k]})}
+    var h='<div class="wit-scard" style="cursor:pointer;min-width:200px" onclick="witShowSummaryPopup(\''+c.filter+'\')">';
+    h+='<h3>'+c.label+'</h3>';
+    h+='<div class="val '+c.cls+'" style="margin-bottom:8px">'+ct+'</div>';
+    h+='<div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap">';
+    stEntries.forEach(function(e){
+      if(!e.cnt&&stateOrder.indexOf(e.st)<0)return;
+      h+='<div style="text-align:center;min-width:42px"><div style="font-size:8px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.3px;margin-bottom:2px">'+e.st+'</div>'+stBadge(e.st,e.cnt)+'</div>';
+    });
+    h+='</div></div>';
+    return h;
+  }
+  // Total card
+  var totalCard='<div class="wit-scard" style="cursor:pointer" onclick="witShowSummaryPopup(\'all\')"><h3>Total</h3><div class="val blue">'+total+'</div></div>';
+  $('witSummaryCards').innerHTML=totalCard+catCard('req',cats.req)+catCard('bug',cats.bug)+catCard('task',cats.task);
 }
 
 function witShowSummaryPopup(filter){
@@ -2984,20 +3030,19 @@ function witShowSummaryPopup(filter){
     if(filter==='req')return isReq;
     if(filter==='bug')return isBug;
     if(filter==='task')return isTask;
-    if(filter==='resolved')return!!it._resolvedDate;
-    if(filter==='closed')return!!it._closedDate;
-    if(filter==='closed_req')return isReq&&!!it._closedDate;
-    if(filter==='closed_bug')return isBug&&!!it._closedDate;
-    if(filter==='closed_task')return isTask&&!!it._closedDate;
+    // State-based filter (e.g. state_Closed, state_Resolved)
+    if(filter.indexOf('state_')===0){var targetState=filter.substring(6);return it._state===targetState}
     return true;
   });
-  var labels={all:'All Items',req:'Requirements',bug:'Bugs',task:'Tasks',resolved:'Resolved Items',closed:'All Closed',closed_req:'Closed Requirements',closed_bug:'Closed Bugs',closed_task:'Closed Tasks'};
+  var label=filter;
+  if(filter==='all')label='All Items';
+  else if(filter==='req')label='Requirements';
+  else if(filter==='bug')label='Bugs';
+  else if(filter==='task')label='Tasks';
+  else if(filter.indexOf('state_')===0)label=filter.substring(6)+' Items';
   document.querySelector('.popup-card').classList.add('popup-wide');
-  $('popupTitle').innerHTML=labels[filter]+' <span style="color:var(--accent-light)">('+items.length+')</span>';
-  var h='<div style="overflow:auto;max-height:60vh"><table style="width:100%;font-size:12px"><thead><tr><th style="text-align:left">ID</th><th style="text-align:left">Type</th><th style="text-align:left;min-width:250px">Title</th><th style="text-align:left">Assigned To</th><th>State</th>';
-  if(filter==='resolved')h+='<th style="text-align:left">Resolved Date</th>';
-  if(filter.indexOf('closed')>=0)h+='<th style="text-align:left">Closed Date</th>';
-  h+='</tr></thead><tbody>';
+  $('popupTitle').innerHTML=label+' <span style="color:var(--accent-light)">('+items.length+')</span>';
+  var h='<div style="overflow:auto;max-height:60vh"><table style="width:100%;font-size:12px"><thead><tr><th style="text-align:left">ID</th><th style="text-align:left">Type</th><th style="text-align:left;min-width:250px">Title</th><th style="text-align:left">Assigned To</th><th>State</th></tr></thead><tbody>';
   items.forEach(function(it){
     var wiUrl=base+'/'+encodeURIComponent(proj)+'/_workitems/edit/'+it.id;
     h+='<tr style="border-top:1px solid var(--bg-base)"><td><a class="wi-link" href="'+wiUrl+'" target="_blank">'+it.id+'</a></td>';
@@ -3005,8 +3050,6 @@ function witShowSummaryPopup(filter){
     h+='<td style="max-width:300px">'+esc(it._title)+'</td>';
     h+='<td style="color:var(--text-muted)">'+esc(it._assignedTo)+'</td>';
     h+='<td><span class="badge" style="'+stSt(it._state)+';font-size:10px">'+esc(it._state)+'</span></td>';
-    if(filter==='resolved')h+='<td style="color:var(--text-muted);font-size:11px">'+witFmtDate(it._resolvedDate)+'</td>';
-    if(filter.indexOf('closed')>=0)h+='<td style="color:var(--text-muted);font-size:11px">'+witFmtDate(it._closedDate)+'</td>';
     h+='</tr>';
   });
   h+='</tbody></table></div>';
@@ -3551,12 +3594,13 @@ async function bugLoadTeams(){
     dd.innerHTML='<option value="">All Teams (no filter)</option>';
     var list=(d.value||[]).sort(function(a,b){return a.name.localeCompare(b.name)});
     list.forEach(function(t){var o=document.createElement('option');o.value=t.name;o.textContent=t.name;dd.appendChild(o)});
-    if(list.some(function(t){return t.name==='Custom Data Parsing'})){dd.value='Custom Data Parsing';await bugOnTeamChange()}
+    var _bugSavedTeam=getSavedTeam();if(list.some(function(t){return t.name===_bugSavedTeam})){dd.value=_bugSavedTeam;await bugOnTeamChange()}
   }catch(e){dd.innerHTML='<option>Failed</option>';alert(e.message)}
 }
 
 async function bugOnTeamChange(){
   var team=$('bugTeamDD').value;bugTeamAreas=[];
+  if(team)saveTeam(team);
   if(!team||!getPAT()||!bugGetProj())return;
   try{
     var r=await fetch(bugGetBase()+'/'+encodeURIComponent(team)+'/_apis/work/teamsettings/teamfieldvalues?api-version=3.0',{headers:getHdrs()});
@@ -3901,6 +3945,172 @@ function bugRenderTable(){
   addBtn('\u203A',bugCurPage+1,false,bugCurPage===totalPages);
 }
 function bugSortBy(col){if(bugSortCol===col)bugSortAsc=!bugSortAsc;else{bugSortCol=col;bugSortAsc=true}bugCurPage=1;bugRenderTable()}
+
+// ===== STORM EFFECT (Canvas-based for smooth 60fps) =====
+var _stormActive=false,_stormCtx=null,_stormCanvas=null,_stormRaf=0;
+function stormStart(){
+  if(_stormActive)return;_stormActive=true;
+  var logo=document.querySelector('.logo');
+  logo.style.animation='none';void logo.offsetWidth;
+  logo.style.animation='popIn .3s ease-out';
+  // Single canvas for everything
+  var c=document.createElement('canvas');c.className='storm-canvas';
+  c.width=window.innerWidth;c.height=window.innerHeight;
+  document.body.appendChild(c);
+  _stormCanvas=c;_stormCtx=c.getContext('2d');
+  c.addEventListener('click',function(){stormEnd()});
+  // Pre-generate rain drops as plain data (no DOM)
+  var drops=[];
+  for(var i=0;i<200;i++){
+    drops.push({x:Math.random()*c.width,y:Math.random()*c.height,len:12+Math.random()*20,speed:800+Math.random()*600,opacity:.2+Math.random()*.4});
+  }
+  // State
+  var st={drops:drops,bolts:[],flash:0,skyAlpha:0,startTime:performance.now(),
+    textAlpha:0,textScale:1,textPhase:'none',textStart:0,fadeOut:false,fadeOutStart:0};
+  // Schedule bolts + flashes
+  var events=[
+    {t:300,type:'bolt'},{t:350,type:'flash',.8:true},
+    {t:1000,type:'bolt'},{t:1050,type:'flash'},
+    {t:1800,type:'text'},{t:1900,type:'bolt'},{t:1950,type:'flash'},
+    {t:2800,type:'bolt'},{t:2850,type:'flash'},
+    {t:3600,type:'bolt'},{t:3650,type:'flash'},
+    {t:4200,type:'bolt'},{t:4250,type:'flash'},
+  ];
+  var timers=[];
+  events.forEach(function(ev){
+    timers.push(setTimeout(function(){
+      if(!_stormActive)return;
+      if(ev.type==='flash')st.flash=1;
+      if(ev.type==='bolt')stormGenBolt(st,c.width,c.height);
+      if(ev.type==='text'){st.textPhase='in';st.textStart=performance.now()}
+    },ev.t));
+  });
+  // Thunder sounds
+  var audioCtx=null;
+  try{audioCtx=new(window.AudioContext||window.webkitAudioContext)()}catch(e){}
+  if(audioCtx){[350,1050,1950,2850,3650].forEach(function(d){timers.push(setTimeout(function(){if(_stormActive)stormPlayThunder(audioCtx)},d))})}
+  // Auto end
+  timers.push(setTimeout(function(){st.fadeOut=true;st.fadeOutStart=performance.now()},4800));
+  timers.push(setTimeout(function(){stormEnd()},5800));
+  st._timers=timers;st._audioCtx=audioCtx;
+  // Render loop
+  function frame(now){
+    if(!_stormActive){return}
+    var ctx=_stormCtx,W=c.width,H=c.height;
+    var elapsed=now-st.startTime;
+    var dt=1/60;// assume ~60fps for physics
+    ctx.clearRect(0,0,W,H);
+    // Sky fade in / out
+    if(st.fadeOut){var fo=Math.min(1,(now-st.fadeOutStart)/1000);st.skyAlpha=Math.max(0,.88*(1-fo))}
+    else{st.skyAlpha=Math.min(.88,elapsed/800*.88)}
+    // Draw sky gradient
+    var grd=ctx.createLinearGradient(0,0,0,H);
+    grd.addColorStop(0,'rgba(10,10,26,'+st.skyAlpha+')');
+    grd.addColorStop(.4,'rgba(26,26,62,'+st.skyAlpha+')');
+    grd.addColorStop(1,'rgba(45,27,78,'+st.skyAlpha+')');
+    ctx.fillStyle=grd;ctx.fillRect(0,0,W,H);
+    // Flash
+    if(st.flash>0){ctx.fillStyle='rgba(255,255,255,'+st.flash*.6+')';ctx.fillRect(0,0,W,H);st.flash=Math.max(0,st.flash-.06)}
+    // Rain
+    if(!st.fadeOut||st.skyAlpha>.1){
+      ctx.strokeStyle='rgba(174,194,224,.5)';ctx.lineWidth=1.5;
+      ctx.beginPath();
+      for(var i=0;i<st.drops.length;i++){
+        var d=st.drops[i];
+        d.y+=d.speed*dt;
+        if(d.y>H+d.len){d.y=-d.len;d.x=Math.random()*W}
+        ctx.moveTo(d.x,d.y);ctx.lineTo(d.x-.5,d.y-d.len);
+      }
+      ctx.globalAlpha=st.skyAlpha;ctx.stroke();ctx.globalAlpha=1;
+    }
+    // Bolts
+    for(var bi=st.bolts.length-1;bi>=0;bi--){
+      var b=st.bolts[bi];
+      var bAge=now-b.born;
+      if(bAge>500){st.bolts.splice(bi,1);continue}
+      var bAlpha=bAge<100?bAge/100:Math.max(0,1-(bAge-100)/400);
+      // Glow
+      ctx.save();
+      ctx.globalAlpha=bAlpha*.4;ctx.strokeStyle='rgba(100,149,237,.8)';ctx.lineWidth=10;ctx.lineCap='round';ctx.lineJoin='round';
+      stormDrawBoltPath(ctx,b.pts);
+      b.branches.forEach(function(br){ctx.beginPath();ctx.moveTo(br[0],br[1]);ctx.lineTo(br[2],br[3]);ctx.stroke()});
+      // Core
+      ctx.globalAlpha=bAlpha;ctx.strokeStyle='#e8f0ff';ctx.lineWidth=2.5;
+      stormDrawBoltPath(ctx,b.pts);
+      b.branches.forEach(function(br){ctx.beginPath();ctx.moveTo(br[0],br[1]);ctx.lineTo(br[2],br[3]);ctx.stroke()});
+      ctx.restore();
+    }
+    // Text
+    if(st.textPhase!=='none'){
+      var tAge=now-st.textStart;
+      if(st.textPhase==='in'){
+        if(tAge<400){st.textAlpha=tAge/400;st.textScale=1.8-0.8*(tAge/400)}
+        else if(tAge<2200){st.textAlpha=1;st.textScale=1}
+        else if(tAge<2800){var p=(tAge-2200)/600;st.textAlpha=1-p;st.textScale=1-.05*p}
+        else{st.textPhase='none';st.textAlpha=0}
+      }
+      if(st.textAlpha>0){
+        ctx.save();ctx.textAlign='center';ctx.textBaseline='middle';
+        ctx.font='900 '+Math.round(Math.min(80,W*.06)*st.textScale)+'px Inter,system-ui,sans-serif';
+        ctx.globalAlpha=st.textAlpha;
+        ctx.shadowColor='rgba(100,149,237,.8)';ctx.shadowBlur=40;
+        ctx.fillStyle='#fff';ctx.fillText('\u26A1 TFS Dashboard \u26A1',W/2,H/2);
+        ctx.shadowBlur=80;ctx.shadowColor='rgba(59,130,246,.4)';
+        ctx.fillText('\u26A1 TFS Dashboard \u26A1',W/2,H/2);
+        ctx.restore();
+      }
+    }
+    _stormRaf=requestAnimationFrame(frame);
+  }
+  _stormRaf=requestAnimationFrame(frame);
+  _stormState=st;
+}
+var _stormState=null;
+function stormEnd(){
+  _stormActive=false;
+  if(_stormRaf){cancelAnimationFrame(_stormRaf);_stormRaf=0}
+  if(_stormState){(_stormState._timers||[]).forEach(clearTimeout);
+    try{if(_stormState._audioCtx)_stormState._audioCtx.close()}catch(e){}_stormState=null}
+  if(_stormCanvas&&_stormCanvas.parentNode)_stormCanvas.parentNode.removeChild(_stormCanvas);
+  // Remove any leftover text els
+  document.querySelectorAll('.storm-text-el').forEach(function(e){e.remove()});
+  _stormCanvas=null;_stormCtx=null;
+}
+function stormDrawBoltPath(ctx,pts){
+  ctx.beginPath();ctx.moveTo(pts[0],pts[1]);
+  for(var i=2;i<pts.length;i+=2)ctx.lineTo(pts[i],pts[i+1]);
+  ctx.stroke();
+}
+function stormGenBolt(st,W,H){
+  var x=W*(.15+Math.random()*.7),y=0,pts=[x,y],branches=[];
+  var maxY=H*(.4+Math.random()*.4);
+  while(y<maxY){
+    x+=(Math.random()-.5)*50;y+=20+Math.random()*35;
+    if(y>maxY)y=maxY;
+    pts.push(x,y);
+    if(Math.random()>.65&&y<maxY*.8){
+      var bx=x+(Math.random()>.5?1:-1)*(20+Math.random()*50),by=y+15+Math.random()*30;
+      branches.push([x,y,bx,by]);
+    }
+  }
+  st.bolts.push({pts:pts,branches:branches,born:performance.now()});
+}
+function stormPlayThunder(ctx){
+  try{
+    var dur=1.2+Math.random()*.8,sr=ctx.sampleRate,buf=ctx.createBuffer(1,sr*dur,sr),data=buf.getChannelData(0);
+    for(var i=0;i<data.length;i++){
+      var t=i/sr;
+      var env=Math.exp(-t*3.5)*(1+Math.sin(t*18)*.25);
+      var rumble=Math.sin(t*35+Math.sin(t*6)*4)*Math.exp(-t*1.8)*.35;
+      var crack=(Math.random()*2-1)*Math.exp(-t*10)*.5;
+      data[i]=(crack+rumble)*env*.2;
+    }
+    var src=ctx.createBufferSource();src.buffer=buf;
+    var gain=ctx.createGain();gain.gain.value=.25;
+    var lp=ctx.createBiquadFilter();lp.type='lowpass';lp.frequency.value=700+Math.random()*400;
+    src.connect(lp);lp.connect(gain);gain.connect(ctx.destination);src.start();
+  }catch(e){}
+}
 
 // ===== ZOOM CONTROLS =====
 var _zoomLevel=100;
