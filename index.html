@@ -503,6 +503,31 @@ th.sel-th input[type=checkbox]{accent-color:var(--accent);width:15px;height:15px
 .bug-af-pill .x{cursor:pointer;color:var(--accent);font-weight:900;transition:all .2s}
 .bug-af-pill .x:hover{color:var(--red);transform:scale(1.2)}
 #tabBug{position:relative;contain:layout style}
+/* Zoom controls */
+.zoom-controls{display:flex;align-items:center;gap:2px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;padding:2px}
+.zoom-btn{background:none;border:none;color:var(--text-muted);font-size:16px;width:30px;height:30px;cursor:pointer;border-radius:6px;display:flex;align-items:center;justify-content:center;transition:all .2s;font-weight:700}
+.zoom-btn:hover{background:rgba(59,130,246,.1);color:var(--accent)}
+.zoom-btn:active{transform:scale(.9)}
+.zoom-level{font-size:10px;color:var(--text-dim);min-width:36px;text-align:center;font-weight:600;user-select:none}
+/* Console log viewer */
+.console-panel{position:fixed;bottom:0;left:0;right:0;height:0;background:var(--bg-card);border-top:2px solid var(--border);z-index:200;transition:height .3s ease;overflow:hidden;display:flex;flex-direction:column}
+.console-panel.open{height:250px}
+.console-hdr{display:flex;justify-content:space-between;align-items:center;padding:6px 14px;border-bottom:1px solid var(--border);flex-shrink:0;background:var(--bg-base)}
+.console-hdr h4{font-size:12px;color:var(--text-muted);font-weight:700;display:flex;align-items:center;gap:6px}
+.console-hdr .console-cnt{background:var(--accent);color:#fff;font-size:9px;padding:1px 6px;border-radius:99px;font-weight:700}
+.console-body{flex:1;overflow-y:auto;padding:6px 14px;font-family:'Cascadia Code',Consolas,monospace;font-size:11px;line-height:1.6}
+.console-entry{padding:3px 0;border-bottom:1px solid var(--bg-base);display:flex;gap:8px;align-items:flex-start}
+.console-entry .ce-time{color:var(--text-dim);font-size:10px;flex-shrink:0;min-width:70px}
+.console-entry .ce-type{font-size:9px;font-weight:700;padding:1px 5px;border-radius:4px;flex-shrink:0;min-width:36px;text-align:center}
+.console-entry .ce-type.log{background:rgba(59,130,246,.15);color:var(--accent-light)}
+.console-entry .ce-type.warn{background:rgba(245,158,11,.15);color:var(--amber)}
+.console-entry .ce-type.error{background:rgba(239,68,68,.15);color:var(--red)}
+.console-entry .ce-type.info{background:rgba(16,185,129,.15);color:var(--green)}
+.console-entry .ce-msg{color:var(--text-secondary);word-break:break-all;flex:1}
+.console-toggle-btn{background:none;border:1px solid var(--border);border-radius:8px;width:30px;height:30px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;color:var(--text-muted);transition:all .2s;position:relative}
+.console-toggle-btn:hover{border-color:var(--accent);color:var(--accent)}
+.console-toggle-btn .console-dot{position:absolute;top:3px;right:3px;width:6px;height:6px;border-radius:50%;background:var(--red);display:none}
+.console-toggle-btn.has-errors .console-dot{display:block;animation:pulseGlow 2s ease-in-out infinite}
 </style>
 </head>
 <body data-author="Q0RQ" data-cr="Q29weXJpZ2h0IMKpIDIwMjYgQ0RQLiBBbGwgcmlnaHRzIHJlc2VydmVkLg==" data-lic="VW5hdXRob3JpemVkIGNvcHlpbmcsIG1vZGlmaWNhdGlvbiwgb3IgZGlzdHJpYnV0aW9uIHByb2hpYml0ZWQu">
@@ -520,6 +545,13 @@ th.sel-th input[type=checkbox]{accent-color:var(--accent);width:15px;height:15px
       <button class="main-tab" onclick="switchMainTab('wit')">📋 Work Item Timeline</button>
       <button class="main-tab" id="bugTabBtn" onclick="switchMainTab('bug')" style="display:none">🐛 Bug Counter</button>
     </div>
+    <div class="zoom-controls" title="Zoom in/out">
+      <button class="zoom-btn" onclick="zoomOut()" title="Zoom out">−</button>
+      <span class="zoom-level" id="zoomLevel">100%</span>
+      <button class="zoom-btn" onclick="zoomIn()" title="Zoom in">+</button>
+      <button class="zoom-btn" onclick="zoomReset()" title="Reset zoom" style="font-size:11px">↺</button>
+    </div>
+    <button class="console-toggle-btn" id="consoleToggleBtn" onclick="toggleConsolePanel()" title="Console Logs"><span>📋</span><span class="console-dot"></span></button>
     <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" title="Toggle light/dark mode"><span class="theme-icon">🌙</span></button>
   </div>
 </div>
@@ -3870,7 +3902,100 @@ function bugRenderTable(){
 }
 function bugSortBy(col){if(bugSortCol===col)bugSortAsc=!bugSortAsc;else{bugSortCol=col;bugSortAsc=true}bugCurPage=1;bugRenderTable()}
 
+// ===== ZOOM CONTROLS =====
+var _zoomLevel=100;
+try{var sz=localStorage.getItem('tfs_zoom');if(sz)_zoomLevel=parseInt(sz)||100}catch(e){}
+function zoomApply(){document.body.style.zoom=(_zoomLevel/100);$('zoomLevel').textContent=_zoomLevel+'%';try{localStorage.setItem('tfs_zoom',''+_zoomLevel)}catch(e){}}
+function zoomIn(){_zoomLevel=Math.min(200,_zoomLevel+10);zoomApply()}
+function zoomOut(){_zoomLevel=Math.max(50,_zoomLevel-10);zoomApply()}
+function zoomReset(){_zoomLevel=100;zoomApply()}
+if(_zoomLevel!==100)zoomApply();
+// Ctrl+= / Ctrl+- zoom
+document.addEventListener('keydown',function(e){
+  if(e.ctrlKey&&(e.key==='='||e.key==='+')){e.preventDefault();zoomIn()}
+  if(e.ctrlKey&&e.key==='-'){e.preventDefault();zoomOut()}
+  if(e.ctrlKey&&e.key==='0'){e.preventDefault();zoomReset()}
+});
+
+// ===== CONSOLE LOG CAPTURE =====
+var _consoleLogs=[],_consoleMaxLogs=500,_consolePanelOpen=false,_consoleHasErrors=false;
+(function(){
+  var _origLog=console.log,_origWarn=console.warn,_origError=console.error,_origInfo=console.info;
+  function capture(type,args){
+    var msg=Array.from(args).map(function(a){
+      if(typeof a==='string')return a.replace(/%c/g,'').trim();
+      try{return JSON.stringify(a)}catch(e){return String(a)}
+    }).filter(Boolean).join(' ');
+    if(!msg)return;
+    _consoleLogs.push({type:type,msg:msg,time:new Date()});
+    if(_consoleLogs.length>_consoleMaxLogs)_consoleLogs.shift();
+    if(type==='error'||type==='warn'){_consoleHasErrors=true;var btn=$('consoleToggleBtn');if(btn)btn.classList.add('has-errors')}
+    if(_consolePanelOpen)renderConsoleLogs();
+  }
+  console.log=function(){capture('log',arguments);_origLog.apply(console,arguments)};
+  console.warn=function(){capture('warn',arguments);_origWarn.apply(console,arguments)};
+  console.error=function(){capture('error',arguments);_origError.apply(console,arguments)};
+  console.info=function(){capture('info',arguments);_origInfo.apply(console,arguments)};
+  // Capture uncaught errors
+  window.addEventListener('error',function(e){capture('error',['Uncaught: '+e.message+' at '+e.filename+':'+e.lineno])});
+  window.addEventListener('unhandledrejection',function(e){capture('error',['Unhandled Promise: '+(e.reason&&e.reason.message||e.reason||'unknown')])});
+})();
+
+function toggleConsolePanel(){
+  _consolePanelOpen=!_consolePanelOpen;
+  var panel=$('consolePanel');
+  panel.classList.toggle('open',_consolePanelOpen);
+  if(_consolePanelOpen){renderConsoleLogs();_consoleHasErrors=false;$('consoleToggleBtn').classList.remove('has-errors')}
+  // Adjust container padding when console is open
+  document.querySelector('.container').style.paddingBottom=_consolePanelOpen?'260px':'';
+}
+
+function renderConsoleLogs(){
+  var body=$('consoleBody');if(!body)return;
+  var cnt=$('consoleCnt');if(cnt)cnt.textContent=_consoleLogs.length;
+  body.innerHTML=_consoleLogs.slice().reverse().map(function(entry){
+    var t=entry.time;
+    var ts=String(t.getHours()).padStart(2,'0')+':'+String(t.getMinutes()).padStart(2,'0')+':'+String(t.getSeconds()).padStart(2,'0');
+    return'<div class="console-entry"><span class="ce-time">'+ts+'</span><span class="ce-type '+entry.type+'">'+entry.type+'</span><span class="ce-msg">'+esc(entry.msg)+'</span></div>';
+  }).join('');
+}
+
+function clearConsoleLogs(){_consoleLogs=[];_consoleHasErrors=false;$('consoleToggleBtn').classList.remove('has-errors');renderConsoleLogs()}
+
+function copyConsoleLogs(){
+  var text=_consoleLogs.map(function(e){
+    var t=e.time;
+    var ts=String(t.getHours()).padStart(2,'0')+':'+String(t.getMinutes()).padStart(2,'0')+':'+String(t.getSeconds()).padStart(2,'0');
+    return'['+ts+'] ['+e.type.toUpperCase()+'] '+e.msg;
+  }).join('\n');
+  navigator.clipboard.writeText(text).then(function(){alert('Copied '+_consoleLogs.length+' log entries')});
+}
+
+function exportConsoleLogs(){
+  var text=_consoleLogs.map(function(e){
+    var t=e.time;
+    var ts=t.toISOString();
+    return'['+ts+'] ['+e.type.toUpperCase()+'] '+e.msg;
+  }).join('\n');
+  var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type:'text/plain'}));
+  a.download='console_logs_'+new Date().toISOString().slice(0,10)+'.txt';a.click();
+}
+
 </script>
+
+<!-- Console Log Panel -->
+<div class="console-panel" id="consolePanel">
+  <div class="console-hdr">
+    <h4>📋 Console Logs <span class="console-cnt" id="consoleCnt">0</span></h4>
+    <div style="display:flex;gap:6px">
+      <button class="export-btn" onclick="copyConsoleLogs()">📋 Copy</button>
+      <button class="export-btn" onclick="exportConsoleLogs()">📥 Export</button>
+      <button class="export-btn" onclick="clearConsoleLogs()">🗑 Clear</button>
+      <button style="background:none;border:none;color:var(--text-muted);font-size:18px;cursor:pointer" onclick="toggleConsolePanel()">&times;</button>
+    </div>
+  </div>
+  <div class="console-body" id="consoleBody"></div>
+</div>
 </body>
 <!--
 ╔═══════════════════════════════════════════════════════════════╗
