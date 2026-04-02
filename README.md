@@ -2,7 +2,7 @@
 
 A single-file, zero-dependency web dashboard for Azure DevOps / TFS that tracks **AI adoption**, **sprint progress**, **completed work**, and **work item timelines** — all from the browser using the TFS REST API.
 
-![Version](https://img.shields.io/badge/version-3.2.1-blue) ![License](https://img.shields.io/badge/license-Proprietary-red) ![Zero Dependencies](https://img.shields.io/badge/dependencies-0-green)
+![Version](https://img.shields.io/badge/version-3.3.0-blue) ![License](https://img.shields.io/badge/license-Proprietary-red) ![Zero Dependencies](https://img.shields.io/badge/dependencies-0-green)
 
 ---
 
@@ -39,10 +39,20 @@ A single-file, zero-dependency web dashboard for Azure DevOps / TFS that tracks 
 - Export to CSV / copy to clipboard
 
 ### 📋 Work Item Timeline
-- Search and visualize work items across sprints
-- Sortable, filterable grid with custom column support
-- Work item type badges (Task, Bug, Requirement, etc.)
-- Link to TFS work item detail pages
+- Parent-child hierarchy: Requirements/Bugs as parents, Tasks as expandable children
+- Expand/collapse individual parents or all at once
+- Discipline filtering: Development & Test by default, checkbox to include all
+- State Timeline column: full state transition history (New → Active → Resolved → Closed)
+- History column: combined State + Status trail (In Dev, In QA, etc.) with reopened highlights
+- Lazy history loading: parent history loaded upfront, child history on expand
+- Dev/Test/Total Hours columns: discipline-wise completed/estimated/remaining hours per parent
+- Summary cards with click-to-view detail popups (Total, Requirements, Bugs, Tasks, Resolved, Closed)
+- Closed count bifurcated by type (Closed Reqs, Closed Bugs, Closed Tasks)
+- Default sort: Requirements first → Sprint Goal tagged → Closed Date
+- Multiselect filters: Type, State, Assigned To, Owned By, Tags (include/exclude, AND/OR)
+- Features, Test Cases, Test Plans excluded from results
+- Sortable columns, checkbox selection, CSV/clipboard export
+- Light/dark theme support
 
 ---
 
