@@ -13,7 +13,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<meta name="version" content="3.3.0">
+<meta name="version" content="3.4.0">
 <meta name="author" content="&#67;&#68;&#80;">
 <meta name="copyright" content="&#67;&#111;&#112;&#121;&#114;&#105;&#103;&#104;&#116; &#169; &#50;&#48;&#50;&#54; &#67;&#68;&#80;. &#65;&#108;&#108; &#114;&#105;&#103;&#104;&#116;&#115; &#114;&#101;&#115;&#101;&#114;&#118;&#101;&#100;.">
 <meta name="rights" content="&#169; &#50;&#48;&#50;&#54; &#67;&#68;&#80; &#45; &#85;&#110;&#97;&#117;&#116;&#104;&#111;&#114;&#105;&#122;&#101;&#100; &#99;&#111;&#112;&#121;&#105;&#110;&#103; &#112;&#114;&#111;&#104;&#105;&#98;&#105;&#116;&#101;&#100;">
@@ -1006,7 +1006,7 @@ th.sel-th input[type=checkbox]{accent-color:var(--accent);width:15px;height:15px
     </div>
   </div>
 
-  <div class="app-footer" id="appFooter" onclick="hFooterClick()" style="cursor:pointer;user-select:none">TFS Dashboard v3.3.0</div>
+  <div class="app-footer" id="appFooter" onclick="hFooterClick()" style="cursor:pointer;user-select:none">TFS Dashboard v3.4.0</div>
 </div>
 
 <!-- Sprint popup -->
@@ -2090,13 +2090,33 @@ var witColsDef=[
       var h=(it._stateHistory||[]).filter(function(e){return e.field==='State'});
       if(it._createdDate){var hasNew=h.some(function(e){return e.to==='New'||e.to==='Proposed'});if(!hasNew)h=[{field:'State',from:'',to:'New',date:it._createdDate}].concat(h)}
       if(!h.length)return'<span style="color:var(--text-dim)">-</span>';
-      // Sort oldest to newest for timeline
-      var sorted=h.slice().sort(function(a,b){return(a.date||'').localeCompare(b.date||'')});
-      return'<div class="wit-history-cell" style="font-size:10px;user-select:text;min-width:220px">'+sorted.map(function(e){
+      // Sort newest to oldest for timeline (desc)
+      var sorted=h.slice().sort(function(a,b){return(b.date||'').localeCompare(a.date||'')});
+      // Calculate days between Resolved→Closed and Resolved→Active(reopen) segments
+      // Use chronological order for calculation, then map by date to display entries
+      var chrono=h.slice().sort(function(a,b){return(a.date||'').localeCompare(b.date||'')});
+      var segByDate={};// keyed by target entry date
+      for(var si=0;si<chrono.length;si++){
+        var cur=chrono[si];
+        if(cur.to==='Resolved'&&si+1<chrono.length){
+          var nxt=chrono[si+1];
+          if(nxt.to==='Closed'&&nxt.date&&cur.date){
+            var dd=Math.round((new Date(nxt.date)-new Date(cur.date))/(86400000));
+            segByDate[nxt.date]={type:'close',days:dd};
+          }
+          if((nxt.to==='Active'||nxt.to==='New')&&(nxt.from==='Resolved'||nxt.from==='Closed')&&nxt.date&&cur.date){
+            var dd=Math.round((new Date(nxt.date)-new Date(cur.date))/(86400000));
+            segByDate[nxt.date]={type:'reopen',days:dd};
+          }
+        }
+      }
+      return'<div class="wit-history-cell" style="font-size:10px;user-select:text;min-width:260px">'+sorted.map(function(e,idx){
         var isReopen=(e.to==='Active'||e.to==='New')&&(e.from==='Resolved'||e.from==='Closed');
         var rowBg=isReopen?'padding:2px 6px;background:rgba(239,68,68,.08);border-radius:4px':'padding:2px 0';
         var lbl=isReopen?'<span style="color:var(--red-light);font-size:9px;font-weight:700">⚠️ Reopened →</span> ':'';
-        return'<div class="wit-h-row" style="'+rowBg+'">'+lbl+'<span class="badge" style="'+stSt(e.to)+';font-size:9px;padding:1px 6px">'+esc(e.to)+'</span> <span style="color:'+(isReopen?'var(--red-light)':'var(--text-dark)')+';font-size:9px">'+witFmtDate(e.date)+'</span></div>'
+        var daysBadge='';
+        if(segByDate[e.date]){var s=segByDate[e.date];var clr=s.type==='reopen'?'var(--red-light)':'var(--green)';daysBadge=' <span style="color:'+clr+';font-size:8px;font-weight:700">('+s.days+'d)</span>'}
+        return'<div class="wit-h-row" style="'+rowBg+'">'+lbl+'<span class="badge" style="'+stSt(e.to)+';font-size:9px;padding:1px 6px">'+esc(e.to)+'</span> <span style="color:'+(isReopen?'var(--red-light)':'var(--text-secondary)')+';font-size:9px">'+witFmtDate(e.date)+'</span>'+daysBadge+'</div>'
       }).join('')+'</div>'},
     sort:function(it){return it._closedDate||it._resolvedDate||it._activatedDate||it._createdDate||'9999'}},
   {key:'reopened',label:'Reopened Datetime',grp:'Dates',vis:false,sortKey:'reopened',
@@ -2124,6 +2144,19 @@ var witColsDef=[
       }
       var h=it._stateHistory||[];if(!h.length)return'<span style="color:var(--text-dim)">-</span>';
       var sorted=h.slice().sort(function(a,b){return(b.date||'').localeCompare(a.date||'')});
+      // Build days map: for State transitions Resolved→Closed or Resolved→Active(reopen)
+      var stOnly=h.filter(function(e){return e.field==='State'}).sort(function(a,b){return(a.date||'').localeCompare(b.date||'')});
+      var hDaysMap={};// keyed by date string of target transition
+      for(var hi=0;hi<stOnly.length;hi++){
+        if(stOnly[hi].to==='Resolved'&&hi+1<stOnly.length){
+          var nxt=stOnly[hi+1];
+          if((nxt.to==='Closed'||(nxt.to==='Active'||nxt.to==='New'))&&nxt.date&&stOnly[hi].date){
+            var dd=Math.round((new Date(nxt.date)-new Date(stOnly[hi].date))/(86400000));
+            var isRe=(nxt.to==='Active'||nxt.to==='New');
+            hDaysMap[nxt.date]={days:dd,type:isRe?'reopen':'close'};
+          }
+        }
+      }
       // Group entries with same datetime
       var groups=[],lastKey='';
       sorted.forEach(function(e){var dk=witFmtDate(e.date);if(dk===lastKey&&groups.length){groups[groups.length-1].push(e)}else{groups.push([e]);lastKey=dk}});
@@ -2140,8 +2173,11 @@ var witColsDef=[
           badges.push('<span class="badge" style="'+(bgClr||stSt(e.to))+';font-size:9px;padding:1px 6px">'+esc(e.to)+'</span>');
         });
         var lblClr=anyReopen?'var(--red-light)':'var(--text-dim)';
-        var dtClr=anyReopen?'var(--red-light)':'var(--text-dark)';
-        return'<div class="wit-h-row" style="'+rowBg+'"><span style="color:'+lblClr+';font-size:9px;font-weight:'+(anyReopen?'700':'400')+'">'+(anyReopen?'⚠️ ':'')+labels.join(', ')+'</span> → '+badges.join(' ')+' <span style="color:'+dtClr+';font-size:9px">'+witFmtDate(grp[0].date)+'</span></div>'
+        var dtClr=anyReopen?'var(--red-light)':'var(--text-secondary)';
+        // Check if any state entry in this group has days info
+        var daysBadge='';
+        grp.forEach(function(e){if(e.field==='State'&&hDaysMap[e.date]){var d=hDaysMap[e.date];var clr=d.type==='reopen'?'var(--red-light)':'var(--green)';daysBadge=' <span style="color:'+clr+';font-size:8px;font-weight:700">('+d.days+'d from Resolved)</span>'}});
+        return'<div class="wit-h-row" style="'+rowBg+'"><span style="color:'+lblClr+';font-size:9px;font-weight:'+(anyReopen?'700':'400')+'">'+(anyReopen?'⚠️ ':'')+labels.join(', ')+'</span> → '+badges.join(' ')+' <span style="color:'+dtClr+';font-size:9px">'+witFmtDate(grp[0].date)+'</span>'+daysBadge+'</div>'
       }).join('')+'</div>'},
     sort:function(it){var h=it._stateHistory||[];return h.length?h[h.length-1].date||'':'9999'}},
   {key:'createdBy',label:'Created By',grp:'Detail',vis:false,sortKey:'createdBy',
