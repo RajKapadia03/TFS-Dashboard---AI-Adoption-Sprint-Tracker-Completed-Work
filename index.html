@@ -13,7 +13,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<meta name="version" content="3.2.2">
+<meta name="version" content="3.3.0">
 <meta name="author" content="&#67;&#68;&#80;">
 <meta name="copyright" content="&#67;&#111;&#112;&#121;&#114;&#105;&#103;&#104;&#116; &#169; &#50;&#48;&#50;&#54; &#67;&#68;&#80;. &#65;&#108;&#108; &#114;&#105;&#103;&#104;&#116;&#115; &#114;&#101;&#115;&#101;&#114;&#118;&#101;&#100;.">
 <meta name="rights" content="&#169; &#50;&#48;&#50;&#54; &#67;&#68;&#80; &#45; &#85;&#110;&#97;&#117;&#116;&#104;&#111;&#114;&#105;&#122;&#101;&#100; &#99;&#111;&#112;&#121;&#105;&#110;&#103; &#112;&#114;&#111;&#104;&#105;&#98;&#105;&#116;&#101;&#100;">
@@ -242,8 +242,11 @@ a.wi-link:hover{text-decoration:underline;color:#93c5fd}
 .cell-trunc{max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;transition:all .2s}
 .cell-trunc:hover{color:var(--accent-light)}
 .cell-trunc.expanded{white-space:normal;word-break:break-word;max-width:none;overflow:visible}
+.wit-history-cell{overflow:visible;min-width:450px}
+.wit-history-cell .wit-h-row{white-space:nowrap;display:block;padding:1px 0}
 /* Column Config Panel */
-.col-cfg-panel{position:fixed;top:0;right:-420px;width:400px;height:100vh;background:var(--bg-card);border-left:1px solid var(--border);z-index:110;transition:right .3s ease;display:flex;flex-direction:column;box-shadow:-4px 0 20px var(--shadow)}
+.col-cfg-panel{position:fixed;top:0;right:-420px;width:400px;height:100vh;background:var(--bg-card);border-left:1px solid var(--border);z-index:110;transition:right .3s ease,visibility .3s;display:flex;flex-direction:column;box-shadow:-4px 0 20px var(--shadow);visibility:hidden}
+.col-cfg-panel.open{visibility:visible}
 .col-cfg-panel.open{right:0}
 .col-cfg-hdr{padding:16px 18px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
 .col-cfg-hdr h3{font-size:15px;color:var(--text-primary);font-weight:700}
@@ -287,6 +290,15 @@ th .ai-resize-handle:hover,th .ai-resize-handle.active{background:rgba(59,130,24
 .wit-scard .val.red{color:var(--red)}
 .wit-scard .val.green{color:var(--green)}
 .wit-scard .val.amber{color:var(--amber)}
+#witMainTable{width:auto!important;min-width:100%;table-layout:auto}
+#witMainTable td,#witMainTable th{white-space:nowrap}
+#witMainTable td:nth-child(3){white-space:normal;min-width:300px}
+.wit-parent-row{font-weight:500}
+.wit-parent-row>td:first-child+td{font-weight:600}
+.wit-child-row-tbl{background:rgba(59,130,246,.03)!important}
+.wit-child-row-tbl td:first-child+td{padding-left:4px}
+.wit-expand-btn{display:inline-block;width:18px;text-align:center;font-size:12px;color:var(--accent-light);cursor:pointer;user-select:none;transition:color .2s}
+.wit-expand-btn:hover{color:var(--accent)}
 .badge-req{background:rgba(59,130,246,.15);color:var(--accent-light);border:1px solid rgba(59,130,246,.3)}
 .badge-bug{background:rgba(239,68,68,.15);color:#f87171;border:1px solid rgba(239,68,68,.3)}
 .badge-task{background:rgba(16,185,129,.15);color:#34d399;border:1px solid rgba(16,185,129,.3)}
@@ -304,7 +316,7 @@ th .ai-resize-handle:hover,th .ai-resize-handle.active{background:rgba(59,130,24
 .wit-tree-header.expanded .wit-tree-stat{background:rgba(255,255,255,.15)}
 .wit-tree-children{max-height:0;overflow:hidden;padding:0 18px;background:var(--bg-base);transition:all .4s ease}
 .wit-tree-children.visible{max-height:5000px;padding:16px 18px}
-.wit-child-row{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:12px 16px;margin-bottom:8px;display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:14px;align-items:center;font-size:12px;transition:all .25s;animation:slideInRight .3s ease-out both}
+.wit-child-row{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:12px 16px;margin-bottom:8px;display:grid;grid-template-columns:2fr 1.5fr auto;gap:14px;align-items:center;font-size:12px;transition:all .25s;animation:slideInRight .3s ease-out both}
 .wit-child-row:hover{transform:translateX(6px);border-color:rgba(59,130,246,.3);box-shadow:0 3px 12px var(--shadow)}
 .date-cell{color:var(--text-muted);font-size:11px}
 .date-cell.has-date{color:var(--text-secondary)}
@@ -620,7 +632,6 @@ th.sel-th input[type=checkbox]{accent-color:var(--accent);width:15px;height:15px
         <div id="spLinkPreview" style="font-size:11px;color:var(--text-dim);margin-bottom:10px;word-break:break-all"></div>
         <div style="display:flex;gap:10px"><button class="btn btn-blue" id="spBtn" onclick="doSpLoad()">🚀 Load Sprint</button><button class="btn btn-gray" style="border:1px solid var(--border-light)" onclick="loadDemo()">👀 Demo</button></div>
         <div class="progress-box" id="spProg"></div><div class="error-box" id="spErr"></div>
-        <div style="margin-top:12px;padding:10px;background:var(--bg-inset);border-radius:8px;font-size:11px;color:var(--text-dim)"><strong>Note:</strong> If CORS errors occur, install <a href="https://chrome.google.com/webstore/detail/allow-cors/lhobafahddgcelffkeicbaginigeejlf" target="_blank" style="color:var(--accent-light)">Allow CORS extension</a>.</div>
       </div>
     </div>
     <div id="dashView" class="hidden">
@@ -711,15 +722,11 @@ th.sel-th input[type=checkbox]{accent-color:var(--accent);width:15px;height:15px
         <button class="btn btn-blue" style="font-size:12px;padding:7px 14px" onclick="witAddIteration()">+ Add Iteration</button>
       </div>
       <div class="iter-tags" id="witIterTags"></div>
-      <div style="margin-top:14px;display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end">
-        <div style="flex:2;min-width:250px"><label>OR Query URL (optional - overrides iteration selection)</label><input type="text" id="witQueryUrl" placeholder="Paste a TFS query URL..."></div>
-      </div>
       <div style="margin-top:14px;display:flex;gap:10px">
         <button class="btn btn-blue" id="witBtnLoad" onclick="witLoadData()">Load Work Items</button>
       </div>
       <div class="progress-box" id="witProgBox"></div>
       <div class="error-box" id="witErrBox"></div>
-      <div style="margin-top:12px;padding:10px;background:var(--bg-base);border-radius:8px;font-size:11px;color:var(--text-dim)"><strong>Note:</strong> If CORS errors occur, install <a href="https://chrome.google.com/webstore/detail/allow-cors/lhobafahddgcelffkeicbaginigeejlf" target="_blank" style="color:var(--accent-light)">Allow CORS extension</a>.</div>
     </div>
 
     <div id="witResults" class="hidden">
@@ -747,6 +754,7 @@ th.sel-th input[type=checkbox]{accent-color:var(--accent);width:15px;height:15px
             <button class="export-btn" onclick="witCopyTable()">Copy</button>
             <button class="export-btn" id="witColCfgBtn" onclick="witToggleColCfg()">Columns<span class="col-count-badge" id="witColCntBadge"></span></button>
             <button class="export-btn" onclick="witToggleView()">Toggle View</button>
+            <button class="export-btn" onclick="witLoadAllHistory()">⏳ Load All History</button>
           </div>
         </div>
 
@@ -768,9 +776,17 @@ th.sel-th input[type=checkbox]{accent-color:var(--accent);width:15px;height:15px
           <button class="clear-filters" onclick="witClearFilters()">Clear</button>
         </div>
 
+        <div style="display:flex;gap:16px;align-items:center;margin-bottom:14px;flex-wrap:wrap">
+          <label class="cbox"><input type="checkbox" id="witShowAllDisc" onchange="witFilterTable()"> Include all disciplines</label>
+          <div style="display:flex;gap:6px">
+            <button class="export-btn" onclick="witExpandAll()">▼ Expand All</button>
+            <button class="export-btn" onclick="witCollapseAll()">▶ Collapse All</button>
+          </div>
+        </div>
+
         <!-- Table View -->
-        <div id="witTableView">
-          <table>
+        <div id="witTableView" style="overflow:auto;max-height:75vh">
+          <table id="witMainTable">
             <thead id="witDataHead"></thead>
             <tbody id="witDataTable"></tbody>
           </table>
@@ -990,7 +1006,7 @@ th.sel-th input[type=checkbox]{accent-color:var(--accent);width:15px;height:15px
     </div>
   </div>
 
-  <div class="app-footer" id="appFooter" onclick="hFooterClick()" style="cursor:pointer;user-select:none">TFS Dashboard v3.2.2</div>
+  <div class="app-footer" id="appFooter" onclick="hFooterClick()" style="cursor:pointer;user-select:none">TFS Dashboard v3.3.0</div>
 </div>
 
 <!-- Sprint popup -->
@@ -1358,9 +1374,12 @@ async function calcAdoption(){
   }catch(e){$('aiErr').textContent='Error: '+e.message;$('aiErr').classList.add('show')}
   finally{$('aiProg').classList.remove('show');$('aiBtnLoad').disabled=false}
 }
-function isL1AI(f){var ti=(f['System.Title']||'').toLowerCase(),tg=(f['System.Tags']||'').toLowerCase(),ac=(f['Microsoft.VSTS.Common.Activity']||'').toLowerCase();
-  if(ti.indexOf('l1')>-1||tg.indexOf('l1')>-1||ac==='l1')return true;
-  var pid=f['System.Parent'];if(pid&&allItemsMap[pid]){var pt=(allItemsMap[pid].tags||'').toLowerCase();if(pt.indexOf('adhoc')>-1||pt.indexOf('support')>-1)return true}return false}
+function isL1AI(f){var tg=(f['System.Tags']||''),ac=(f['Microsoft.VSTS.Common.Activity']||'').toLowerCase();
+  var tagArr=tg.split(';').map(function(s){return s.trim().toLowerCase()});
+  if(tagArr.indexOf('l1')>-1||ac==='l1')return true;
+  if(/\bl1\b/i.test(f['System.Title']||''))return true;
+  var pid=f['System.Parent'];if(pid&&allItemsMap[pid]){var ptArr=(allItemsMap[pid].tags||'').split(';').map(function(s){return s.trim().toLowerCase()});if(ptArr.indexOf('adhoc')>-1||ptArr.indexOf('support')>-1||ptArr.indexOf('ad-hoc')>-1||ptArr.indexOf('l1')>-1)return true}
+  return false}
 function procAI(tasks){
   var am={},tA=0,tM=0,tAH=0,tMH=0,aiEffSum=0,aiEffCnt=0,manEffSum=0,manEffCnt=0;
   tasks.forEach(t=>{var f=t.fields,a=f['System.AssignedTo']?.displayName||'Unassigned',et=f['Casepoint.TFS.CustomFields.TaskExecutionType']||'Unknown',h=f['Microsoft.VSTS.Scheduling.OriginalEstimate']||0,cw=f['Microsoft.VSTS.Scheduling.CompletedWork']||0,ai=et.startsWith('AI-'),excl=ai&&isL1AI(f);
@@ -1453,20 +1472,38 @@ function renderEffPanel(){var d=spData;if(!d){$('effPanel').innerHTML='';return}
   h+='<div style="font-size:10px;color:var(--text-dim)">'+(diff>0?'AI more efficient':'AI needs improvement')+'</div>';
   h+='</div></div>';
   if(aiBelow.length){
-    h+='<div style="border-top:1px solid var(--border);padding-top:12px"><div style="font-size:11px;font-weight:700;color:var(--red);margin-bottom:8px">⚠️ '+aiBelow.length+' AI task'+(aiBelow.length!==1?'s':'')+' below target efficiency ('+spCfgAIEffTarget+'%)</div>';
-    h+='<table style="width:100%;font-size:11px"><thead><tr><th style="text-align:left">ID</th><th style="text-align:left">Title</th><th>Est</th><th>Done</th><th>Left</th><th>Eff%</th><th>Target</th><th style="text-align:left">Action Needed</th></tr></thead><tbody>';
+    // Build assignee list for filter
+    var aiBelowAssignees={};aiBelow.forEach(function(x){var a=x.t.assignedTo||'Unassigned';aiBelowAssignees[a]=(aiBelowAssignees[a]||0)+1});
+    var assigneeOpts=Object.keys(aiBelowAssignees).sort().map(function(a){return'<option value="'+esc(a)+'">'+esc(a)+' ('+aiBelowAssignees[a]+')</option>'}).join('');
+    h+='<div style="border-top:1px solid var(--border);padding-top:12px"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:8px"><div style="font-size:11px;font-weight:700;color:var(--red)">⚠️ '+aiBelow.length+' AI task'+(aiBelow.length!==1?'s':'')+' below target efficiency ('+spCfgAIEffTarget+'%)</div>';
+    h+='<div style="display:flex;gap:8px;align-items:center"><label style="font-size:10px;margin:0">Filter:</label><select id="effBelowFilter" onchange="effFilterBelow()" style="padding:4px 8px;font-size:11px;min-width:120px"><option value="">All Assignees</option>'+assigneeOpts+'</select><input type="text" id="effBelowSearch" placeholder="Search..." oninput="effFilterBelow()" style="padding:4px 8px;font-size:11px;width:140px"></div></div>';
+    h+='<table style="width:100%;font-size:11px"><thead><tr><th style="text-align:left">ID</th><th style="text-align:left">Title</th><th style="text-align:left">Assigned To</th><th>Est</th><th>Done</th><th>Left</th><th>Eff%</th><th>Target</th><th style="text-align:left">Action Needed</th></tr></thead><tbody id="effBelowTbody">';
     aiBelow.forEach(function(x){
       var t=x.t,targetDone=Math.round(t.originalEst*(1-spCfgAIEffTarget/100)*100)/100;
       var excess=Math.round((t.completed-targetDone)*100)/100;
-      var remAdj=Math.round(Math.max(0,t.remaining-Math.max(0,excess))*100)/100;
       var action='';
       if(excess>0){action='<span style="color:var(--red)">Below target — used <strong>'+excess.toFixed(1)+'h</strong> more than allowed.'+(t.remaining>0?' Remaining: <strong>'+t.remaining+'h</strong>':'')+'</span>'}
       else{action='<span style="color:var(--amber)">'+Math.abs(excess).toFixed(1)+'h left to reach target. On track if completed soon.</span>'}
-      h+='<tr style="border-top:1px solid var(--bg-base)"><td>'+wiLk(t.id)+'</td><td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+esc(t.title)+'">'+esc(t.title)+'</td>';
+      h+='<tr class="eff-below-row" data-assignee="'+esc(t.assignedTo||'Unassigned')+'" style="border-top:1px solid var(--bg-base)"><td>'+wiLk(t.id)+'</td><td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+esc(t.title)+'">'+esc(t.title)+'</td>';
+      h+='<td style="color:var(--text-muted)">'+esc(t.assignedTo||'Unassigned')+'</td>';
       h+='<td style="text-align:center;color:var(--purple)">'+t.originalEst+'</td><td style="text-align:center;color:var(--green)">'+t.completed+'</td><td style="text-align:center;color:var(--amber)">'+t.remaining+'</td>';
       h+='<td style="text-align:center;color:var(--red);font-weight:700">'+x.eff+'%</td><td style="text-align:center;color:var(--accent)">'+targetDone+'h</td><td>'+action+'</td></tr>'});
     h+='</tbody></table></div>'}
   h+='</div>';$('effPanel').innerHTML=h}
+function effFilterBelow(){
+  var fa=$('effBelowFilter')?$('effBelowFilter').value:'';
+  var sq=$('effBelowSearch')?$('effBelowSearch').value.toLowerCase():'';
+  var rows=document.querySelectorAll('.eff-below-row');
+  var vis=0;
+  rows.forEach(function(r){
+    var assignee=r.dataset.assignee||'';
+    var txt=r.textContent.toLowerCase();
+    var show=(!fa||assignee===fa)&&(!sq||txt.indexOf(sq)>=0);
+    r.style.display=show?'':'none';
+    if(show)vis++;
+  });
+}
+
 function parseSpLink(lnk,apply){try{var d=decodeURIComponent(lnk||"").replace(/\/+$/,"");var m=d.match(/https?:\/\/([^\/]+)\/tfs\/([^\/]+)\/([^\/]+)\/_sprints\/[^\/]+\/([^\/]+)\/([^\/]+)\/(.*)/i);if(m){var b="https://"+m[1]+"/tfs/"+m[2],p=m[3],t=m[4],s=m[6]||"";if(apply){SP_BASE=b;SP_PROJ=p;SP_TEAM=t}return{base:b,proj:p,team:t,sprint:s}}return{base:"",proj:"",team:"",sprint:d.split("/").pop()||""}}catch(e){return{base:"",proj:"",team:"",sprint:""}}}
 function spGetBase(){var u=$('spBaseUrl').value.trim();return u.endsWith('/')?u.slice(0,-1):u}
 function spLoadProjects(){
@@ -1623,7 +1660,16 @@ function fetchSpU(items,sDays,spN,pb){
 }
 function findTask(wid){if(!spData)return null;var found=null;spData.assignees.forEach(function(a){a.tasks.forEach(function(t){if(t.id===wid)found=t})});return found}
 function findAssignee(wid){if(!spData)return null;var found=null;spData.assignees.forEach(function(a){a.tasks.forEach(function(t){if(t.id===wid)found=a})});return found}
-function isL1Task(t){var ti=(t.title||'').toLowerCase(),tg=(t.tags||'').toLowerCase(),ac=(t.activity||'').toLowerCase();if(ti.indexOf('l1')>-1||tg.indexOf('l1')>-1||ac==='l1')return true;var pid=t.parent&&t.parent!=='-'?t.parent:null;if(pid&&allItemsMap[pid]){var pt=(allItemsMap[pid].tags||'').toLowerCase();if(pt.indexOf('adhoc')>-1||pt.indexOf('support')>-1)return true}return false}
+function isL1Task(t){var ti=(t.title||'').toLowerCase(),tg=(t.tags||'').toLowerCase(),ac=(t.activity||'').toLowerCase();
+  // Check for explicit L1 markers
+  var tagArr=tg.split(';').map(function(s){return s.trim()});
+  if(tagArr.indexOf('l1')>-1||ac==='l1')return true;
+  // Check title for "L1" as a standalone word (not part of another word)
+  if(/\bl1\b/i.test(t.title||''))return true;
+  // Check parent tags for exact "adhoc" or "support" tags (not substring)
+  var pid=t.parent&&t.parent!=='-'?t.parent:null;
+  if(pid&&allItemsMap[pid]){var ptArr=(allItemsMap[pid].tags||'').split(';').map(function(s){return s.trim().toLowerCase()});if(ptArr.indexOf('adhoc')>-1||ptArr.indexOf('support')>-1||ptArr.indexOf('ad-hoc')>-1||ptArr.indexOf('l1')>-1)return true}
+  return false}
 function isSupportTask(t){var ti=(t.title||'').toLowerCase();if(ti.indexOf('ticket support')>-1)return true;var pid=t.parent&&t.parent!=='-'?t.parent:null;if(pid&&allItemsMap[pid]){var pt=(allItemsMap[pid].tags||'').toLowerCase();if(pt.indexOf('support')>-1)return true}return false}
 function isOwnAssignee(name){if(!spCurrentUser)return false;var n=name.toLowerCase(),cu=spCurrentUser.toLowerCase();return n===cu||n.indexOf(cu)>-1||cu.indexOf(n)>-1}
 function calcSuggest(t){
@@ -2017,43 +2063,87 @@ function spCopyAssignee(tblId){
   navigator.clipboard.writeText(txt).then(()=>alert('Copied!')).catch(()=>alert('Copy failed'))}
 
 // ===== WORK ITEM TIMELINE (WIT) =====
-var witAllItems=[],witSortCol='',witSortDir='asc',witViewMode='table',witSelectedIters=[],witSelectedIds=new Set();
+var witAllItems=[],witSortCol='',witSortDir='asc',witViewMode='table',witSelectedIters=[],witSelectedIds=new Set(),witExpandedParents=new Set();
 
 // ===== WIT COLUMN CONFIGURATION =====
 var witColsDef=[
   {key:'type',label:'Type',grp:'Core',vis:true,sortKey:'type',
     ren:function(it){return witTypeBadge(it._type)},
     sort:function(it){return it._type}},
-  {key:'title',label:'Requirement / Bug',grp:'Core',vis:true,wide:true,sortKey:'title',
+  {key:'title',label:'Requirement / Bug',grp:'Core',vis:true,sortKey:'title',
     ren:function(it,wiUrl){return'<a class="wi-link" href="'+wiUrl+'" target="_blank" onclick="event.stopPropagation()">'+it._type+' '+it.id+': '+esc(it._title)+'</a>'},
     sort:function(it){return it._title.toLowerCase()}},
   {key:'assignedTo',label:'Assigned To',grp:'Core',vis:true,sortKey:'assignedTo',
     ren:function(it){return esc(it._assignedTo)},
     sort:function(it){return it._assignedTo.toLowerCase()}},
   {key:'state',label:'State',grp:'Core',vis:true,sortKey:'state',
-    ren:function(it){return esc(it._state)},
+    ren:function(it){return'<span class="badge" style="'+stSt(it._state)+'">'+esc(it._state)+'</span>'},
     sort:function(it){return it._state}},
   {key:'ownedBy',label:'Owned By',grp:'Core',vis:false,sortKey:'ownedBy',
     ren:function(it){return esc(it._ownedBy||'')},
     sort:function(it){return(it._ownedBy||'').toLowerCase()}},
-  {key:'resolved',label:'Resolved Datetime',grp:'Dates',vis:true,sortKey:'resolved',
-    ren:function(it){return'<span class="date-cell '+(it._resolvedDate?'has-date':'')+'">'+witFmtDate(it._resolvedDate)+'</span>'},
-    sort:function(it){return it._resolvedDate||'9999'}},
-  {key:'closed',label:'Closed Datetime',grp:'Dates',vis:true,sortKey:'closed',
-    ren:function(it){return'<span class="date-cell '+(it._closedDate?'has-date':'')+'">'+witFmtDate(it._closedDate)+'</span>'},
-    sort:function(it){return it._closedDate||'9999'}},
-  {key:'created',label:'Bug Raised Datetime',grp:'Dates',vis:true,sortKey:'created',
-    ren:function(it){return'<span class="date-cell '+(it._createdDate?'has-date':'')+'">'+witFmtDate(it._createdDate)+'</span>'},
-    sort:function(it){return it._createdDate||'9999'}},
+  {key:'timeline',label:'Timeline',grp:'Dates',vis:true,sortKey:'timeline',
+    ren:function(it){
+      if(!it._historyLoaded){
+        return'<span style="color:var(--text-dim);font-size:10px;cursor:pointer" onclick="event.stopPropagation();witLoadSingleHistory('+it.id+')">▶ Load</span>';
+      }
+      var h=(it._stateHistory||[]).filter(function(e){return e.field==='State'});
+      if(it._createdDate){var hasNew=h.some(function(e){return e.to==='New'||e.to==='Proposed'});if(!hasNew)h=[{field:'State',from:'',to:'New',date:it._createdDate}].concat(h)}
+      if(!h.length)return'<span style="color:var(--text-dim)">-</span>';
+      // Sort oldest to newest for timeline
+      var sorted=h.slice().sort(function(a,b){return(a.date||'').localeCompare(b.date||'')});
+      return'<div class="wit-history-cell" style="font-size:10px;user-select:text;min-width:220px">'+sorted.map(function(e){
+        var isReopen=(e.to==='Active'||e.to==='New')&&(e.from==='Resolved'||e.from==='Closed');
+        var rowBg=isReopen?'padding:2px 6px;background:rgba(239,68,68,.08);border-radius:4px':'padding:2px 0';
+        var lbl=isReopen?'<span style="color:var(--red-light);font-size:9px;font-weight:700">⚠️ Reopened →</span> ':'';
+        return'<div class="wit-h-row" style="'+rowBg+'">'+lbl+'<span class="badge" style="'+stSt(e.to)+';font-size:9px;padding:1px 6px">'+esc(e.to)+'</span> <span style="color:'+(isReopen?'var(--red-light)':'var(--text-dark)')+';font-size:9px">'+witFmtDate(e.date)+'</span></div>'
+      }).join('')+'</div>'},
+    sort:function(it){return it._closedDate||it._resolvedDate||it._activatedDate||it._createdDate||'9999'}},
   {key:'reopened',label:'Reopened Datetime',grp:'Dates',vis:false,sortKey:'reopened',
     ren:function(it){return it._reopenedDate?'<span style="color:var(--red-light)">'+witFmtDate(it._reopenedDate)+'</span>':''},
     sort:function(it){return it._reopenedDate||'9999'}},
   {key:'reResolved',label:'Re-Resolved Datetime',grp:'Dates',vis:false,sortKey:'reResolved',
     ren:function(it){return it._reResolvedDate?'<span style="color:var(--green-light)">'+witFmtDate(it._reResolvedDate)+'</span>':''},
     sort:function(it){return it._reResolvedDate||'9999'}},
-  {key:'turnaround',label:'Turnaround',grp:'Dates',vis:true,sortKey:'turnaround',
+  {key:'turnaround',label:'Turnaround',grp:'Dates',vis:false,sortKey:'turnaround',
     ren:function(it){var ta=witCalcTurnaround(it),tc=witTurnaroundClass(ta),tt=witTurnaroundText(ta);return'<span class="turnaround '+tc+'">'+tt+'</span>'},
     sort:function(it){return witCalcTurnaround(it)||9999}},
+  {key:'devHours',label:'Dev Hours',grp:'Hours',vis:true,sortKey:'devHours',
+    ren:function(it){var t=it._type.toLowerCase();if(t.indexOf('task')>=0)return'';var h=it._discHours||{};if(!h.devComp&&!h.devEst&&!h.devRem)return'<span style="color:var(--text-dim)">-</span>';return'<div style="font-size:10px;line-height:1.5"><span style="color:var(--green);font-weight:700">'+h.devComp.toFixed(1)+'h</span> <span style="color:var(--text-dim)">done</span><br><span style="color:var(--purple)">'+h.devEst.toFixed(1)+'h</span> <span style="color:var(--text-dim)">est</span><br><span style="color:var(--amber)">'+h.devRem.toFixed(1)+'h</span> <span style="color:var(--text-dim)">left</span></div>'},
+    sort:function(it){return(it._discHours||{}).devComp||0}},
+  {key:'testHours',label:'Test Hours',grp:'Hours',vis:true,sortKey:'testHours',
+    ren:function(it){var t=it._type.toLowerCase();if(t.indexOf('task')>=0)return'';var h=it._discHours||{};if(!h.testComp&&!h.testEst&&!h.testRem)return'<span style="color:var(--text-dim)">-</span>';return'<div style="font-size:10px;line-height:1.5"><span style="color:var(--green);font-weight:700">'+h.testComp.toFixed(1)+'h</span> <span style="color:var(--text-dim)">done</span><br><span style="color:var(--purple)">'+h.testEst.toFixed(1)+'h</span> <span style="color:var(--text-dim)">est</span><br><span style="color:var(--amber)">'+h.testRem.toFixed(1)+'h</span> <span style="color:var(--text-dim)">left</span></div>'},
+    sort:function(it){return(it._discHours||{}).testComp||0}},
+  {key:'totalHours',label:'Total Hours',grp:'Hours',vis:true,sortKey:'totalHours',
+    ren:function(it){var t=it._type.toLowerCase();if(t.indexOf('task')>=0)return'';var h=it._discHours||{};var tc=h.devComp+h.testComp+h.otherComp,te=h.devEst+h.testEst+h.otherEst,tr=h.devRem+h.testRem+h.otherRem;if(!tc&&!te&&!tr)return'<span style="color:var(--text-dim)">-</span>';return'<div style="font-size:10px;line-height:1.5"><span style="color:var(--green);font-weight:700">'+tc.toFixed(1)+'h</span> <span style="color:var(--text-dim)">done</span><br><span style="color:var(--purple)">'+te.toFixed(1)+'h</span> <span style="color:var(--text-dim)">est</span><br><span style="color:var(--amber)">'+tr.toFixed(1)+'h</span> <span style="color:var(--text-dim)">left</span></div>'},
+    sort:function(it){var h=it._discHours||{};return h.devComp+h.testComp+h.otherComp}},
+  {key:'history',label:'History',grp:'Dates',vis:true,wide:true,sortKey:'history',
+    ren:function(it){
+      if(!it._historyLoaded){
+        return'<span style="color:var(--text-dim);font-size:10px;cursor:pointer" onclick="event.stopPropagation();witLoadSingleHistory('+it.id+')">▶ Load</span>';
+      }
+      var h=it._stateHistory||[];if(!h.length)return'<span style="color:var(--text-dim)">-</span>';
+      var sorted=h.slice().sort(function(a,b){return(b.date||'').localeCompare(a.date||'')});
+      // Group entries with same datetime
+      var groups=[],lastKey='';
+      sorted.forEach(function(e){var dk=witFmtDate(e.date);if(dk===lastKey&&groups.length){groups[groups.length-1].push(e)}else{groups.push([e]);lastKey=dk}});
+      return'<div class="wit-history-cell" style="font-size:10px;user-select:text;min-width:380px">'+groups.map(function(grp){
+        var anyReopen=grp.some(function(e){return e.field==='Tag'||(e.field==='State'&&(e.to==='Active'||e.to==='New')&&(e.from==='Resolved'||e.from==='Closed'))});
+        var rowBg=anyReopen?'background:rgba(239,68,68,.08);border-radius:4px;padding:2px 6px':'padding:2px 0';
+        var labels=[],badges=[];
+        grp.forEach(function(e){
+          var isSt=e.field==='Status';var isTag=e.field==='Tag';
+          var isReopen=isTag||(e.field==='State'&&(e.to==='Active'||e.to==='New')&&(e.from==='Resolved'||e.from==='Closed'));
+          var bgClr=isTag?'background:rgba(239,68,68,.2);color:#f87171;font-weight:700':isSt?'background:rgba(168,85,247,.15);color:#c084fc':isReopen?'background:#ef4444;color:#fff;font-weight:700':'';
+          var lbl=isTag?'Tag':isSt?'Status':isReopen?'Reopened':'State';
+          if(labels.indexOf(lbl)<0)labels.push(lbl);
+          badges.push('<span class="badge" style="'+(bgClr||stSt(e.to))+';font-size:9px;padding:1px 6px">'+esc(e.to)+'</span>');
+        });
+        var lblClr=anyReopen?'var(--red-light)':'var(--text-dim)';
+        var dtClr=anyReopen?'var(--red-light)':'var(--text-dark)';
+        return'<div class="wit-h-row" style="'+rowBg+'"><span style="color:'+lblClr+';font-size:9px;font-weight:'+(anyReopen?'700':'400')+'">'+(anyReopen?'⚠️ ':'')+labels.join(', ')+'</span> → '+badges.join(' ')+' <span style="color:'+dtClr+';font-size:9px">'+witFmtDate(grp[0].date)+'</span></div>'
+      }).join('')+'</div>'},
+    sort:function(it){var h=it._stateHistory||[];return h.length?h[h.length-1].date||'':'9999'}},
   {key:'createdBy',label:'Created By',grp:'Detail',vis:false,sortKey:'createdBy',
     ren:function(it){var f=it.fields||{};var v=f['System.CreatedBy'];return esc(v&&typeof v==='object'?v.displayName:v||'')},
     sort:function(it){var f=it.fields||{};var v=f['System.CreatedBy'];return((v&&typeof v==='object'?v.displayName:v)||'').toLowerCase()}},
@@ -2451,21 +2541,30 @@ async function witLoadData(){
   var btn=$('witBtnLoad');btn.disabled=true;
   witHideErr();witAllItems=[];
   try{
-    var qUrl=$('witQueryUrl').value.trim();
     var ids=[];
-    if(qUrl){
-      ids=await witLoadFromQuery(qUrl);
-    }else if(witSelectedIters.length>0){
+    if(witSelectedIters.length>0){
       ids=await witLoadFromIterations();
     }else{
-      throw new Error('Please select iterations or provide a query URL');
+      throw new Error('Please select iterations');
     }
     if(ids.length===0){witShowProg('No work items found.');btn.disabled=false;return}
     witShowProg('Fetching '+ids.length+' work items...');
     var items=await witFetchWorkItems(ids);
-    witShowProg('Fetching update history for '+items.length+' items...');
-    await witFetchUpdates(items);
+    witInitItemProps(items);
     witAllItems=items;
+    witCalcDisciplineHours();
+    // Fetch history upfront for parents only (non-task items + orphan tasks)
+    var parentItemMap={};items.forEach(function(it){parentItemMap[it.id]=it});
+    var parentIds=items.filter(function(it){
+      var t=it._type.toLowerCase();
+      if(t.indexOf('feature')>=0)return false;
+      if(t.indexOf('task')>=0&&it._parentId&&parentItemMap[it._parentId])return false;
+      return true;
+    }).map(function(it){return it.id});
+    if(parentIds.length){
+      witShowProg('Loading history for '+parentIds.length+' parent items...');
+      await witFetchHistoryForItems(parentIds);
+    }
     witBuildFilters();
     witRenderResults();
     $('witResults').classList.remove('hidden');
@@ -2518,62 +2617,71 @@ async function witFetchWorkItems(ids){
   return all;
 }
 
-async function witFetchUpdates(items){
+function witInitItemProps(items){
+  items.forEach(function(item){
+    var f=item.fields||{};
+    item._createdDate=f['System.CreatedDate']||null;
+    item._type=f['System.WorkItemType']||'Other';
+    item._title=f['System.Title']||'(No title)';
+    item._state=f['System.State']||'';
+    item._assignedTo=(f['System.AssignedTo']&&(typeof f['System.AssignedTo']==='object'?f['System.AssignedTo'].displayName:f['System.AssignedTo']))||'Unassigned';
+    var obRaw=f['Casepoint.TFS.CustomFields.OwnedBy']||'';
+    item._ownedBy=(obRaw&&typeof obRaw==='object'?obRaw.displayName:obRaw)||'';
+    item._iterationPath=f['System.IterationPath']||'';
+    item._parentId=f['System.Parent']||null;
+    item._tags=(f['System.Tags']||'').split(';').map(function(t){return t.trim()}).filter(Boolean);
+    item._stateHistory=null; // null = not loaded yet
+    item._historyLoaded=false;
+    item._activatedDate=f['Microsoft.VSTS.Common.ActivatedDate']||null;
+    item._resolvedDate=f['Microsoft.VSTS.Common.ResolvedDate']||null;
+    item._closedDate=f['Microsoft.VSTS.Common.ClosedDate']||null;
+    item._reopenedDate=null;item._reResolvedDate=null;item._isReopened=false;
+  });
+}
+
+function witParseUpdates(item,updates){
+  item._stateHistory=[];
+  item._resolvedDate=null;item._closedDate=null;
+  item._activatedDate=null;item._reopenedDate=null;item._reResolvedDate=null;item._isReopened=false;
+  var f=item.fields||{},wasResolved=false,wasClosed=false;
+  var _stFlds=['Casepoint.TFS.CustomFields.Status','Microsoft.VSTS.CMMI.SubState','Casepoint.TFS.CustomFields.SubStatus'];
+  for(var u=0;u<updates.length;u++){
+    var upd=updates[u];
+    if(upd.fields){
+      if(upd.fields['System.State']){
+        var nv=upd.fields['System.State'].newValue||'',ov=upd.fields['System.State'].oldValue||'';
+        var chgDate=upd.fields['System.ChangedDate']?upd.fields['System.ChangedDate'].newValue:upd.revisedDate;
+        if(nv)item._stateHistory.push({field:'State',from:ov,to:nv,date:chgDate});
+        if(nv==='Active'&&!item._activatedDate)item._activatedDate=chgDate;
+        if(nv==='Resolved'){if(wasResolved&&item._reopenedDate)item._reResolvedDate=chgDate;if(!item._resolvedDate)item._resolvedDate=chgDate;wasResolved=true}
+        if(nv==='Closed'){if(!item._closedDate)item._closedDate=chgDate;wasClosed=true}
+        if((ov==='Resolved'||ov==='Closed')&&(nv==='Active'||nv==='New')){item._reopenedDate=chgDate;item._isReopened=true;item._reResolvedDate=null}
+      }
+      for(var sf=0;sf<_stFlds.length;sf++){if(upd.fields[_stFlds[sf]]){var snv=upd.fields[_stFlds[sf]].newValue||'',sov=upd.fields[_stFlds[sf]].oldValue||'',scd=upd.fields['System.ChangedDate']?upd.fields['System.ChangedDate'].newValue:upd.revisedDate;if(snv)item._stateHistory.push({field:'Status',from:sov,to:snv,date:scd})}}
+      var _fks=Object.keys(upd.fields);for(var fki=0;fki<_fks.length;fki++){var _fkn=_fks[fki];if(_fkn==='System.State'||_stFlds.indexOf(_fkn)>=0)continue;if(_fkn.toLowerCase().indexOf('status')>=0&&upd.fields[_fkn].newValue){var _fnv=upd.fields[_fkn].newValue,_fov=upd.fields[_fkn].oldValue||'',_fcd=upd.fields['System.ChangedDate']?upd.fields['System.ChangedDate'].newValue:upd.revisedDate;if(_fnv&&typeof _fnv==='string')item._stateHistory.push({field:'Status',from:_fov,to:_fnv,date:_fcd})}}
+      if(upd.fields['System.Tags']){var _ntags=(upd.fields['System.Tags'].newValue||'').toLowerCase(),_otags=(upd.fields['System.Tags'].oldValue||'').toLowerCase(),_tcd=upd.fields['System.ChangedDate']?upd.fields['System.ChangedDate'].newValue:upd.revisedDate;if(_ntags.indexOf('reopen')>=0&&_otags.indexOf('reopen')<0)item._stateHistory.push({field:'Tag',from:'',to:'Reopened',date:_tcd})}
+      if(upd.fields['Microsoft.VSTS.Common.ResolvedDate']&&upd.fields['Microsoft.VSTS.Common.ResolvedDate'].newValue&&!item._resolvedDate)item._resolvedDate=upd.fields['Microsoft.VSTS.Common.ResolvedDate'].newValue;
+      if(upd.fields['Microsoft.VSTS.Common.ClosedDate']&&upd.fields['Microsoft.VSTS.Common.ClosedDate'].newValue&&!item._closedDate)item._closedDate=upd.fields['Microsoft.VSTS.Common.ClosedDate'].newValue;
+    }
+  }
+  if(!item._activatedDate&&f['Microsoft.VSTS.Common.ActivatedDate'])item._activatedDate=f['Microsoft.VSTS.Common.ActivatedDate'];
+  if(!item._resolvedDate&&f['Microsoft.VSTS.Common.ResolvedDate'])item._resolvedDate=f['Microsoft.VSTS.Common.ResolvedDate'];
+  if(!item._closedDate&&f['Microsoft.VSTS.Common.ClosedDate'])item._closedDate=f['Microsoft.VSTS.Common.ClosedDate'];
+  item._historyLoaded=true;
+}
+
+// Fetch history for a set of item IDs, returns a promise
+async function witFetchHistoryForItems(itemIds){
   var base=witGetBase();
-  for(var i=0;i<items.length;i+=5){
-    var batch=items.slice(i,i+5);
-    witShowProg('Fetching history '+(i+1)+'-'+Math.min(i+5,items.length)+' of '+items.length+'...');
-    await Promise.all(batch.map(function(item){
-      return tfsGet(base+'/_apis/wit/workitems/'+item.id+'/updates?api-version=5.0').then(function(ur){
-        var updates=ur.value||[];
-        item._resolvedDate=null;item._closedDate=null;item._createdDate=null;
-        item._reopenedDate=null;item._reResolvedDate=null;item._isReopened=false;
-        var f=item.fields||{};
-        item._createdDate=f['System.CreatedDate']||null;
-        item._type=f['System.WorkItemType']||'Other';
-        item._title=f['System.Title']||'(No title)';
-        item._state=f['System.State']||'';
-        item._assignedTo=(f['System.AssignedTo']&&(typeof f['System.AssignedTo']==='object'?f['System.AssignedTo'].displayName:f['System.AssignedTo']))||'Unassigned';
-        var obRaw=f['Casepoint.TFS.CustomFields.OwnedBy']||'';
-        item._ownedBy=(obRaw&&typeof obRaw==='object'?obRaw.displayName:obRaw)||'';
-        item._iterationPath=f['System.IterationPath']||'';
-        item._tags=(f['System.Tags']||'').split(';').map(function(t){return t.trim()}).filter(Boolean);
-        var wasResolved=false,wasClosed=false;
-        for(var u=0;u<updates.length;u++){
-          var upd=updates[u];
-          if(upd.fields){
-            if(upd.fields['System.State']){
-              var nv=upd.fields['System.State'].newValue||'';
-              var ov=upd.fields['System.State'].oldValue||'';
-              var chgDate=upd.fields['System.ChangedDate']?upd.fields['System.ChangedDate'].newValue:upd.revisedDate;
-              if(nv==='Resolved'){
-                if(wasResolved&&item._reopenedDate){
-                  item._reResolvedDate=chgDate;
-                }
-                if(!item._resolvedDate)item._resolvedDate=chgDate;
-                wasResolved=true;
-              }
-              if(nv==='Closed'){
-                if(!item._closedDate)item._closedDate=chgDate;
-                wasClosed=true;
-              }
-              if((ov==='Resolved'||ov==='Closed')&&(nv==='Active'||nv==='New')){
-                item._reopenedDate=chgDate;
-                item._isReopened=true;
-                item._reResolvedDate=null;
-              }
-            }
-            if(upd.fields['Microsoft.VSTS.Common.ResolvedDate']&&upd.fields['Microsoft.VSTS.Common.ResolvedDate'].newValue){
-              if(!item._resolvedDate)item._resolvedDate=upd.fields['Microsoft.VSTS.Common.ResolvedDate'].newValue;
-            }
-            if(upd.fields['Microsoft.VSTS.Common.ClosedDate']&&upd.fields['Microsoft.VSTS.Common.ClosedDate'].newValue){
-              if(!item._closedDate)item._closedDate=upd.fields['Microsoft.VSTS.Common.ClosedDate'].newValue;
-            }
-          }
-        }
-        if(!item._resolvedDate&&f['Microsoft.VSTS.Common.ResolvedDate'])item._resolvedDate=f['Microsoft.VSTS.Common.ResolvedDate'];
-        if(!item._closedDate&&f['Microsoft.VSTS.Common.ClosedDate'])item._closedDate=f['Microsoft.VSTS.Common.ClosedDate'];
-      }).catch(function(){});
+  var itemMap={};witAllItems.forEach(function(it){itemMap[it.id]=it});
+  var toFetch=itemIds.filter(function(id){return itemMap[id]&&!itemMap[id]._historyLoaded});
+  for(var i=0;i<toFetch.length;i+=20){
+    var batch=toFetch.slice(i,i+20);
+    await Promise.all(batch.map(function(id){
+      var item=itemMap[id];if(!item)return Promise.resolve();
+      return tfsGet(base+'/_apis/wit/workitems/'+id+'/updates?api-version=5.0').then(function(ur){
+        witParseUpdates(item,ur.value||[]);
+      }).catch(function(){item._stateHistory=[];item._historyLoaded=true});
     }));
   }
 }
@@ -2627,6 +2735,32 @@ witMsCreate('witMsAssigned','All Assignees');
 witMsCreate('witMsOwnedBy','All Owners');
 witMsCreate('witMsTags','All Tags');
 
+function witCalcDisciplineHours(){
+  // Build map of parentId -> {devCompleted, devEstimate, testCompleted, testEstimate, otherCompleted, otherEstimate}
+  var parentHours={};
+  witAllItems.forEach(function(it){
+    var f=it.fields||{};
+    var t=(f['System.WorkItemType']||'').toLowerCase();
+    if(t!=='task')return;
+    var pid=f['System.Parent'];
+    if(!pid)return;
+    var disc=(f['Microsoft.VSTS.Common.Discipline']||'').toLowerCase();
+    var cw=f['Microsoft.VSTS.Scheduling.CompletedWork']||0;
+    var est=f['Microsoft.VSTS.Scheduling.OriginalEstimate']||0;
+    var rem=f['Microsoft.VSTS.Scheduling.RemainingWork']||0;
+    if(!parentHours[pid])parentHours[pid]={devComp:0,devEst:0,devRem:0,testComp:0,testEst:0,testRem:0,otherComp:0,otherEst:0,otherRem:0};
+    if(disc.indexOf('development')>=0){parentHours[pid].devComp+=cw;parentHours[pid].devEst+=est;parentHours[pid].devRem+=rem}
+    else if(disc.indexOf('test')>=0){parentHours[pid].testComp+=cw;parentHours[pid].testEst+=est;parentHours[pid].testRem+=rem}
+    else{parentHours[pid].otherComp+=cw;parentHours[pid].otherEst+=est;parentHours[pid].otherRem+=rem}
+  });
+  // Assign to parent items
+  witAllItems.forEach(function(it){
+    var h=parentHours[it.id];
+    if(h){it._devHours=h;it._testHours=h;it._discHours=h}
+    else{it._discHours={devComp:0,devEst:0,devRem:0,testComp:0,testEst:0,testRem:0,otherComp:0,otherEst:0,otherRem:0}}
+  });
+}
+
 function witBuildFilters(){
   var types={},states={},assignees={},owners={},tags={};
   witAllItems.forEach(function(it){
@@ -2651,7 +2785,38 @@ function witGetFiltered(){
   var selAssigned=witMsGetSelected('witMsAssigned');
   var selOwners=witMsGetSelected('witMsOwnedBy');
   var selTags=witMsGetSelected('witMsTags');
+  var showAllDisc=$('witShowAllDisc')&&$('witShowAllDisc').checked;
+  // Build set of parent IDs that have dev/test children (for discipline filtering)
+  var witDevTestParents=null;
+  if(!showAllDisc){
+    witDevTestParents=new Set();
+    witAllItems.forEach(function(it){
+      var f=it.fields||{};
+      var t=(f['System.WorkItemType']||'').toLowerCase();
+      if(t!=='task')return;
+      var disc=(f['Microsoft.VSTS.Common.Discipline']||'').toLowerCase();
+      if(disc.indexOf('development')>=0||disc.indexOf('test')>=0){
+        var pid=f['System.Parent'];if(pid)witDevTestParents.add(pid);
+      }
+    });
+  }
   return witAllItems.filter(function(it){
+    var _tl=it._type.toLowerCase();
+    if(_tl.indexOf('feature')>=0||_tl.indexOf('test case')>=0||_tl.indexOf('test plan')>=0||_tl.indexOf('test suite')>=0)return false;
+    // Discipline filter: for tasks, only show Dev/Test; for parents, only show if they have Dev/Test children
+    if(!showAllDisc){
+      var t=it._type.toLowerCase();
+      if(t==='task'){
+        var disc=(it.fields&&it.fields['Microsoft.VSTS.Common.Discipline']||'').toLowerCase();
+        if(disc.indexOf('development')<0&&disc.indexOf('test')<0)return false;
+      }else if(t!=='feature'){
+        // Parent item: keep if it has dev/test children OR has no children at all (orphan req/bug)
+        if(witDevTestParents&&!witDevTestParents.has(it.id)){
+          var hasAnyChild=witAllItems.some(function(c){return c._parentId===it.id&&c._type.toLowerCase()==='task'});
+          if(hasAnyChild)return false;
+        }
+      }
+    }
     if(s&&(it.id+'').indexOf(s)<0&&it._title.toLowerCase().indexOf(s)<0)return false;
     if(selTypes.length&&selTypes.indexOf(it._type)<0)return false;
     if(selStates.length&&selStates.indexOf(it._state)<0)return false;
@@ -2673,6 +2838,23 @@ function witGetFiltered(){
   });
 }
 
+function witDefaultSort(a,b){
+  // 1. Requirements first, then Bugs, then others
+  var typeOrder={'requirement':0,'product backlog item':0,'user story':0,'bug':1,'task':2};
+  var ta=(a._type||'').toLowerCase(),tb=(b._type||'').toLowerCase();
+  var oa=typeOrder[ta]!=null?typeOrder[ta]:3,ob=typeOrder[tb]!=null?typeOrder[tb]:3;
+  if(oa!==ob)return oa-ob;
+  // 2. Sprint Goal tagged items first
+  var asg=(a._tags||[]).some(function(t){return t.toLowerCase().indexOf('sprint goal')>=0})?0:1;
+  var bsg=(b._tags||[]).some(function(t){return t.toLowerCase().indexOf('sprint goal')>=0})?0:1;
+  if(asg!==bsg)return asg-bsg;
+  // 3. By Closed Date (closed first, then by date desc)
+  var ac=a._closedDate||'',bc=b._closedDate||'';
+  if(ac&&!bc)return-1;if(!ac&&bc)return 1;
+  if(ac&&bc)return bc.localeCompare(ac);
+  return 0;
+}
+
 function witRenderResults(){
   var items=witGetFiltered();
   if(witSortCol){
@@ -2682,6 +2864,8 @@ function witRenderResults(){
       if(va>vb)return witSortDir==='asc'?1:-1;
       return 0;
     });
+  }else{
+    items.sort(witDefaultSort);
   }
   witRenderSummary(items);
   if(witViewMode==='table')witRenderTable(items);
@@ -2694,22 +2878,72 @@ function witGetSortVal(item,col){
   return'';
 }
 
+var _witSummaryItems=[];
 function witRenderSummary(items){
-  var total=items.length,bugs=0,reqs=0,resolved=0,closed=0,reopened=0;
+  _witSummaryItems=items;
+  var total=items.length,bugs=0,reqs=0,tasks=0,resolved=0,closedReqs=0,closedBugs=0,closedTasks=0;
   items.forEach(function(it){
-    if(it._type.toLowerCase().indexOf('bug')>=0)bugs++;
-    else reqs++;
+    var t=it._type.toLowerCase();
+    var isReq=t.indexOf('requirement')>=0||t.indexOf('product backlog')>=0||t.indexOf('user story')>=0;
+    var isBug=t.indexOf('bug')>=0;
+    var isTask=t==='task';
+    if(isBug)bugs++;else if(isTask)tasks++;else if(isReq)reqs++;
     if(it._resolvedDate)resolved++;
-    if(it._closedDate)closed++;
-    if(it._isReopened)reopened++;
+    if(it._closedDate){if(isReq)closedReqs++;else if(isBug)closedBugs++;else if(isTask)closedTasks++}
   });
+  var closedTotal=closedReqs+closedBugs+closedTasks;
+  function sc(label,val,cls,filter){return'<div class="wit-scard" style="cursor:pointer" onclick="witShowSummaryPopup(\''+filter+'\')"><h3>'+label+'</h3><div class="val '+cls+'">'+val+'</div></div>'}
   $('witSummaryCards').innerHTML=
-    '<div class="wit-scard"><h3>Total Items</h3><div class="val blue">'+total+'</div></div>'+
-    '<div class="wit-scard"><h3>Requirements</h3><div class="val green">'+reqs+'</div></div>'+
-    '<div class="wit-scard"><h3>Bugs</h3><div class="val red">'+bugs+'</div></div>'+
-    '<div class="wit-scard"><h3>Resolved</h3><div class="val amber">'+resolved+'</div></div>'+
-    '<div class="wit-scard"><h3>Closed</h3><div class="val green">'+closed+'</div></div>'+
-    '<div class="wit-scard"><h3>Reopened</h3><div class="val red">'+reopened+'</div></div>';
+    sc('Total',total,'blue','all')+
+    sc('Requirements',reqs,'green','req')+
+    sc('Bugs',bugs,'red','bug')+
+    sc('Tasks',tasks,'amber','task')+
+    sc('Resolved',resolved,'amber','resolved')+
+    sc('Closed',closedTotal,'green','closed')+
+    sc('Closed Reqs',closedReqs,'green','closed_req')+
+    sc('Closed Bugs',closedBugs,'red','closed_bug')+
+    sc('Closed Tasks',closedTasks,'amber','closed_task');
+}
+
+function witShowSummaryPopup(filter){
+  var base=witGetBase(),proj=$('witProjDD').value||'CasepointARA';
+  var items=_witSummaryItems.filter(function(it){
+    var t=it._type.toLowerCase();
+    var isReq=t.indexOf('requirement')>=0||t.indexOf('product backlog')>=0||t.indexOf('user story')>=0;
+    var isBug=t.indexOf('bug')>=0;
+    var isTask=t==='task';
+    if(filter==='all')return true;
+    if(filter==='req')return isReq;
+    if(filter==='bug')return isBug;
+    if(filter==='task')return isTask;
+    if(filter==='resolved')return!!it._resolvedDate;
+    if(filter==='closed')return!!it._closedDate;
+    if(filter==='closed_req')return isReq&&!!it._closedDate;
+    if(filter==='closed_bug')return isBug&&!!it._closedDate;
+    if(filter==='closed_task')return isTask&&!!it._closedDate;
+    return true;
+  });
+  var labels={all:'All Items',req:'Requirements',bug:'Bugs',task:'Tasks',resolved:'Resolved Items',closed:'All Closed',closed_req:'Closed Requirements',closed_bug:'Closed Bugs',closed_task:'Closed Tasks'};
+  document.querySelector('.popup-card').classList.add('popup-wide');
+  $('popupTitle').innerHTML=labels[filter]+' <span style="color:var(--accent-light)">('+items.length+')</span>';
+  var h='<div style="overflow:auto;max-height:60vh"><table style="width:100%;font-size:12px"><thead><tr><th style="text-align:left">ID</th><th style="text-align:left">Type</th><th style="text-align:left;min-width:250px">Title</th><th style="text-align:left">Assigned To</th><th>State</th>';
+  if(filter==='resolved')h+='<th style="text-align:left">Resolved Date</th>';
+  if(filter.indexOf('closed')>=0)h+='<th style="text-align:left">Closed Date</th>';
+  h+='</tr></thead><tbody>';
+  items.forEach(function(it){
+    var wiUrl=base+'/'+encodeURIComponent(proj)+'/_workitems/edit/'+it.id;
+    h+='<tr style="border-top:1px solid var(--bg-base)"><td><a class="wi-link" href="'+wiUrl+'" target="_blank">'+it.id+'</a></td>';
+    h+='<td>'+witTypeBadge(it._type)+'</td>';
+    h+='<td style="max-width:300px">'+esc(it._title)+'</td>';
+    h+='<td style="color:var(--text-muted)">'+esc(it._assignedTo)+'</td>';
+    h+='<td><span class="badge" style="'+stSt(it._state)+';font-size:10px">'+esc(it._state)+'</span></td>';
+    if(filter==='resolved')h+='<td style="color:var(--text-muted);font-size:11px">'+witFmtDate(it._resolvedDate)+'</td>';
+    if(filter.indexOf('closed')>=0)h+='<td style="color:var(--text-muted);font-size:11px">'+witFmtDate(it._closedDate)+'</td>';
+    h+='</tr>';
+  });
+  h+='</tbody></table></div>';
+  $('popupBody').innerHTML=h;
+  openPopup();
 }
 
 function witRenderTable(items){
@@ -2720,22 +2954,55 @@ function witRenderTable(items){
   var thead='<tr><th class="sel-th"><input type="checkbox" id="witSelAll" onclick="witToggleSelectAll(this.checked)" title="Select All"></th>';
   visCols.forEach(function(c){
     var sc=witSortCol===c.key?(' sorted-'+(witSortDir==='asc'?'asc':'desc')):'';
-    thead+='<th class="'+sc+'" onclick="witSortBy(\''+c.key+'\')"'+(c.wide?' style="min-width:300px"':'')+'>'+esc(c.label)+' <span class="sort-icon"></span></th>';
+    thead+='<th class="'+sc+'" onclick="witSortBy(\''+c.key+'\')"'+(c.wide?' style="min-width:400px"':'')+'>'+esc(c.label)+' <span class="sort-icon"></span></th>';
   });
   thead+='</tr>';
   $('witDataHead').innerHTML=thead;
-  var html='';
+
+  // Build parent-child hierarchy
+  var itemMap={};
+  items.forEach(function(it){itemMap[it.id]=it});
+  var childrenOf={};
   items.forEach(function(it){
+    if(it._parentId&&itemMap[it._parentId]){
+      if(!childrenOf[it._parentId])childrenOf[it._parentId]=[];
+      childrenOf[it._parentId].push(it);
+    }
+  });
+  var topLevel=items.filter(function(it){
+    var t=it._type.toLowerCase();
+    if(t.indexOf('task')>=0&&it._parentId&&itemMap[it._parentId])return false;
+    return true;
+  });
+
+  function renderRow(it,isChild,parentId,childCount){
     var wiUrl=base+'/'+encodeURIComponent(proj)+'/_workitems/edit/'+it.id;
     var isSel=witSelectedIds.has(it.id);
-    html+='<tr class="selectable'+(isSel?' selected':'')+'" data-id="'+it.id+'" onclick="witToggleRowSelect('+it.id+',event)">';
-    html+='<td class="sel-td"><input type="checkbox" '+(isSel?'checked':'')+' onclick="event.stopPropagation();witToggleRowSelect('+it.id+',event)"></td>';
-    visCols.forEach(function(c){
+    var hasChildren=childCount>0;
+    var isExpanded=hasChildren&&witExpandedParents.has(it.id);
+    var childVisible=isChild&&witExpandedParents.has(parentId);
+    var cls=(isSel?' selected':'')+(isChild?' wit-child-row-tbl':'')+(hasChildren?' wit-parent-row':'');
+    var r='<tr class="'+cls+'" data-id="'+it.id+'"'+(isChild?' data-parent="'+parentId+'"':'')+' style="'+(isChild&&!childVisible?'display:none':'')+'">';
+    r+='<td class="sel-td"><input type="checkbox" '+(isSel?'checked':'')+' onclick="witToggleRowSelect('+it.id+',event)"></td>';
+    visCols.forEach(function(c,ci){
       var def=witGetColDef(c.key);
-      var content=def&&def.ren?def.ren(it,wiUrl):'-';
-      html+='<td>'+content+'</td>';
+      var content='-';
+      try{content=def&&def.ren?def.ren(it,wiUrl):'-'}catch(e){content='<span style="color:var(--red);font-size:9px">err</span>'}
+      if(ci===0&&hasChildren){
+        content='<span class="wit-expand-btn" data-pid="'+it.id+'" onclick="event.stopPropagation();witToggleChildren('+it.id+')">'+(isExpanded?'▼':'▶')+'</span> '+content+' <span style="font-size:9px;color:var(--text-dim);font-weight:400">('+childCount+')</span>';
+      }
+      if(isChild&&ci===0)content='<span style="padding-left:24px;color:var(--text-dim)">└─</span> '+content;
+      r+='<td>'+content+'</td>';
     });
-    html+='</tr>';
+    r+='</tr>';
+    return r;
+  }
+
+  var html='';
+  topLevel.forEach(function(it){
+    var children=childrenOf[it.id]||[];
+    html+=renderRow(it,false,null,children.length);
+    children.forEach(function(ch){html+=renderRow(ch,true,it.id,0)});
   });
   $('witDataTable').innerHTML=html;
   var vis=items.length,tot=witAllItems.length;
@@ -2747,40 +3014,123 @@ function witRenderTree(items){
   $('witTableView').classList.add('hidden');
   $('witTreeView').classList.remove('hidden');
   var base=witGetBase(),proj=$('witProjDD').value||'CasepointARA';
-  var reqs=[],bugs=[];
+  // Build a map of all items by id for child lookup
+  var itemMap={};
+  items.forEach(function(it){itemMap[it.id]=it});
+  // Build parent->children map (tasks linked to their parent)
+  var childrenOf={};
   items.forEach(function(it){
-    if(it._type.toLowerCase().indexOf('bug')>=0)bugs.push(it);
-    else reqs.push(it);
+    if(it._parentId&&itemMap[it._parentId]){
+      if(!childrenOf[it._parentId])childrenOf[it._parentId]=[];
+      childrenOf[it._parentId].push(it);
+    }
   });
-  var html='';
-  reqs.forEach(function(it){
-    var wiUrl=base+'/'+encodeURIComponent(proj)+'/_workitems/edit/'+it.id;
-    html+='<div class="tree-item"><div class="wit-tree-header" onclick="witToggleTree(this)">'+
-      '<div class="wit-tree-title"><span class="tid">'+it.id+'</span><span class="tname"><a class="wi-link" href="'+wiUrl+'" target="_blank">'+esc(it._title)+'</a></span></div>'+
-      '<div class="wit-tree-stats">'+
-      '<div class="wit-tree-stat" style="color:var(--accent-light)">'+it._type+'</div>'+
-      '<div class="wit-tree-stat" style="color:var(--text-muted)">'+esc(it._state)+'</div>'+
-      (it._resolvedDate?'<div class="wit-tree-stat" style="color:var(--green-light)">Resolved: '+witFmtDate(it._resolvedDate)+'</div>':'')+
-      '</div></div>'+
-      '<div class="wit-tree-children">'+
-      '<div class="wit-child-row"><div>Assigned: '+esc(it._assignedTo)+'</div><div class="date-cell '+(it._resolvedDate?'has-date':'')+'">Resolved: '+witFmtDate(it._resolvedDate)+'</div><div class="date-cell '+(it._closedDate?'has-date':'')+'">Closed: '+witFmtDate(it._closedDate)+'</div><div class="date-cell '+(it._createdDate?'has-date':'')+'">Created: '+witFmtDate(it._createdDate)+'</div></div>'+
-      '</div></div>';
+  // Top-level: Requirements and Bugs only (no Features), exclude items that are children of another visible item
+  var topLevel=items.filter(function(it){
+    var t=it._type.toLowerCase();
+    if(t.indexOf('feature')>=0)return false;
+    if(t.indexOf('task')>=0&&it._parentId&&itemMap[it._parentId])return false;
+    return true;
   });
-  if(bugs.length){
-    html+='<div class="tree-item"><div class="wit-tree-header" onclick="witToggleTree(this)" style="border-left:3px solid var(--red)">'+
-      '<div class="wit-tree-title"><span class="tid" style="background:rgba(239,68,68,.15);color:var(--red-light)">BUGS</span><span class="tname">'+bugs.length+' bugs</span></div></div>'+
-      '<div class="wit-tree-children">';
-    bugs.forEach(function(it){
-      var wiUrl=base+'/'+encodeURIComponent(proj)+'/_workitems/edit/'+it.id;
-      var ta=witCalcTurnaround(it),tc=witTurnaroundClass(ta),tt=witTurnaroundText(ta);
-      html+='<div class="wit-child-row"><div><a class="wi-link" href="'+wiUrl+'" target="_blank">Bug '+it.id+': '+esc(it._title)+'</a><br><span style="font-size:10px;color:var(--text-dim)">'+esc(it._assignedTo)+' | '+esc(it._state)+'</span></div>'+
-        '<div class="date-cell '+(it._resolvedDate?'has-date':'')+'">'+witFmtDate(it._resolvedDate)+'</div>'+
-        '<div class="date-cell '+(it._closedDate?'has-date':'')+'">'+witFmtDate(it._closedDate)+'</div>'+
-        '<div class="date-cell '+(it._createdDate?'has-date':'')+'"><div>'+witFmtDate(it._createdDate)+'</div>'+(tt?'<div class="turnaround '+tc+'">'+tt+'</div>':'')+'</div></div>';
-    });
-    html+='</div></div>';
+
+  function witStateDates(it){
+    var h='';
+    if(it._createdDate)h+='<span class="badge" style="background:rgba(100,116,139,.15);color:var(--text-muted);font-size:9px">New</span> '+witFmtDate(it._createdDate)+'<br>';
+    if(it._activatedDate)h+='<span class="badge" style="background:rgba(59,130,246,.15);color:var(--accent-light);font-size:9px">Active</span> '+witFmtDate(it._activatedDate)+'<br>';
+    if(it._resolvedDate)h+='<span class="badge" style="background:rgba(245,158,11,.15);color:var(--amber-light);font-size:9px">Resolved</span> '+witFmtDate(it._resolvedDate)+'<br>';
+    if(it._closedDate)h+='<span class="badge" style="background:rgba(16,185,129,.15);color:var(--green-light);font-size:9px">Closed</span> '+witFmtDate(it._closedDate);
+    return h||'-';
   }
+
+  function renderChildRow(it){
+    var wiUrl=base+'/'+encodeURIComponent(proj)+'/_workitems/edit/'+it.id;
+    var ta=witCalcTurnaround(it),tc=witTurnaroundClass(ta),tt=witTurnaroundText(ta);
+    return'<div class="wit-child-row"><div>'+witTypeBadge(it._type)+' <a class="wi-link" href="'+wiUrl+'" target="_blank">'+it.id+': '+esc(it._title)+'</a><br><span style="font-size:10px;color:var(--text-dim)">'+esc(it._assignedTo)+' | '+esc(it._state)+'</span></div>'+
+      '<div style="font-size:10px;line-height:1.6">'+witStateDates(it)+'</div>'+
+      (tt?'<div class="turnaround '+tc+'">'+tt+'</div>':'<div></div>')+'</div>';
+  }
+
+  var html='';
+  topLevel.forEach(function(it){
+    var wiUrl=base+'/'+encodeURIComponent(proj)+'/_workitems/edit/'+it.id;
+    var isBug=it._type.toLowerCase().indexOf('bug')>=0;
+    var borderStyle=isBug?'border-left:3px solid var(--red)':'';
+    var dh=it._discHours||{devComp:0,testComp:0};
+    var children=childrenOf[it.id]||[];
+    var childCount=children.length?' <span style="font-size:11px;color:var(--text-dim)">('+children.length+' task'+(children.length!==1?'s':'')+')</span>':'';
+    html+='<div class="tree-item"><div class="wit-tree-header" onclick="witToggleTree(this)" style="'+borderStyle+'">'+
+      '<div class="wit-tree-title">'+witTypeBadge(it._type)+' <span class="tid">'+it.id+'</span><span class="tname"><a class="wi-link" href="'+wiUrl+'" target="_blank">'+esc(it._title)+'</a>'+childCount+'</span></div>'+
+      '<div class="wit-tree-stats">'+
+      '<div class="wit-tree-stat"><span class="badge" style="'+stSt(it._state)+';font-size:9px">'+esc(it._state)+'</span></div>'+
+      '<div class="wit-tree-stat" style="color:var(--text-dim)">'+esc(it._assignedTo)+'</div>'+
+      (dh.devComp?'<div class="wit-tree-stat" style="color:var(--green)">Dev: '+dh.devComp.toFixed(1)+'h</div>':'')+
+      (dh.testComp?'<div class="wit-tree-stat" style="color:var(--pink)">Test: '+dh.testComp.toFixed(1)+'h</div>':'')+
+      '</div></div>'+
+      '<div class="wit-tree-children">';
+    if(children.length){
+      children.forEach(function(ch){html+=renderChildRow(ch)});
+    }else{
+      html+='<div class="wit-child-row"><div>Assigned: '+esc(it._assignedTo)+'</div><div style="font-size:10px;line-height:1.6">'+witStateDates(it)+'</div></div>';
+    }
+    html+='</div></div>';
+  });
   $('witTreeView').innerHTML=html;
+}
+
+function witToggleChildren(pid){
+  var isExpanded=witExpandedParents.has(pid);
+  if(isExpanded){
+    witExpandedParents.delete(pid);
+  }else{
+    witExpandedParents.add(pid);
+  }
+  var rows=document.querySelectorAll('tr[data-parent="'+pid+'"]');
+  var btn=document.querySelector('.wit-expand-btn[data-pid="'+pid+'"]');
+  rows.forEach(function(r){r.style.display=isExpanded?'none':''});
+  if(btn){btn.textContent=isExpanded?'▶':'▼'}
+  // Lazy-load history for children on first expand
+  if(!isExpanded){
+    var childIds=[];
+    rows.forEach(function(r){var id=parseInt(r.dataset.id);if(id)childIds.push(id)});
+    var itemMap={};witAllItems.forEach(function(it){itemMap[it.id]=it});
+    var needLoad=childIds.filter(function(id){return itemMap[id]&&!itemMap[id]._historyLoaded});
+    if(needLoad.length){
+      witFetchHistoryForItems(needLoad).then(function(){witRenderResults()});
+    }
+  }
+}
+
+function witExpandAll(){
+  document.querySelectorAll('.wit-expand-btn').forEach(function(b){var pid=parseInt(b.dataset.pid);if(pid)witExpandedParents.add(pid);b.textContent='▼'});
+  document.querySelectorAll('tr[data-parent]').forEach(function(r){r.style.display=''});
+  // Lazy-load history for all unloaded children
+  var childIds=[];
+  document.querySelectorAll('tr[data-parent]').forEach(function(r){var id=parseInt(r.dataset.id);if(id)childIds.push(id)});
+  var itemMap={};witAllItems.forEach(function(it){itemMap[it.id]=it});
+  var needLoad=childIds.filter(function(id){return itemMap[id]&&!itemMap[id]._historyLoaded});
+  if(needLoad.length){
+    witShowProg('Loading history for '+needLoad.length+' child items...');
+    witFetchHistoryForItems(needLoad).then(function(){witHideProg();witRenderResults()});
+  }
+}
+
+function witCollapseAll(){
+  witExpandedParents.clear();
+  document.querySelectorAll('tr[data-parent]').forEach(function(r){r.style.display='none'});
+  document.querySelectorAll('.wit-expand-btn').forEach(function(b){b.textContent='▶'});
+}
+
+function witLoadSingleHistory(id){
+  var el=document.querySelector('tr[data-id="'+id+'"]');
+  if(el){var cells=el.querySelectorAll('td');cells.forEach(function(td){if(td.textContent.trim()==='▶ Load')td.innerHTML='<span class="spinner" style="width:12px;height:12px;border-width:2px"></span>'})}
+  witFetchHistoryForItems([id]).then(function(){witRenderResults()});
+}
+
+function witLoadAllHistory(){
+  var ids=witAllItems.filter(function(it){return!it._historyLoaded&&it._type.toLowerCase().indexOf('feature')<0}).map(function(it){return it.id});
+  if(!ids.length)return;
+  witShowProg('Loading history for '+ids.length+' items...');
+  witFetchHistoryForItems(ids).then(function(){witHideProg();witRenderResults()});
 }
 
 function witToggleTree(el){
@@ -2874,12 +3224,14 @@ function witGetColText(c,it){
     case'assignedTo':return it._assignedTo;
     case'state':return it._state;
     case'ownedBy':return it._ownedBy||'';
-    case'resolved':return it._resolvedDate?new Date(it._resolvedDate).toLocaleString():'';
-    case'closed':return it._closedDate?new Date(it._closedDate).toLocaleString():'';
-    case'created':return it._createdDate?new Date(it._createdDate).toLocaleString():'';
+    case'timeline':var th3=(it._stateHistory||[]).filter(function(e){return e.field==='State'}).sort(function(a,b){return(a.date||'').localeCompare(b.date||'')});return th3.map(function(e){return e.to+': '+new Date(e.date).toLocaleString()}).join(' | ');
     case'reopened':return it._reopenedDate?new Date(it._reopenedDate).toLocaleString():'';
     case'reResolved':return it._reResolvedDate?new Date(it._reResolvedDate).toLocaleString():'';
     case'turnaround':var ta=witCalcTurnaround(it);return ta!==null?ta:'';
+    case'devHours':var dh=it._discHours||{};return dh.devComp?dh.devComp.toFixed(1):'';
+    case'testHours':var th2=it._discHours||{};return th2.testComp?th2.testComp.toFixed(1):'';
+    case'totalHours':var tth=it._discHours||{};var ttv=tth.devComp+tth.testComp+tth.otherComp;return ttv?ttv.toFixed(1):'';
+    case'history':var sh=it._stateHistory||[];return sh.map(function(e){return'State → '+e.to+' '+new Date(e.date).toLocaleString()}).join(' | ');
     default:
       if(c.field){return witTfsFieldVal(it,c.field)}
       var f=it.fields||{};
