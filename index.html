@@ -13,7 +13,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<meta name="version" content="3.7.1">
+<meta name="version" content="3.7.3">
 <meta name="author" content="&#67;&#68;&#80;">
 <meta name="copyright" content="&#67;&#111;&#112;&#121;&#114;&#105;&#103;&#104;&#116; &#169; &#50;&#48;&#50;&#54; &#67;&#68;&#80;. &#65;&#108;&#108; &#114;&#105;&#103;&#104;&#116;&#115; &#114;&#101;&#115;&#101;&#114;&#118;&#101;&#100;.">
 <meta name="rights" content="&#169; &#50;&#48;&#50;&#54; &#67;&#68;&#80; &#45; &#85;&#110;&#97;&#117;&#116;&#104;&#111;&#114;&#105;&#122;&#101;&#100; &#99;&#111;&#112;&#121;&#105;&#110;&#103; &#112;&#114;&#111;&#104;&#105;&#98;&#105;&#116;&#101;&#100;">
@@ -1060,7 +1060,7 @@ th.sel-th input[type=checkbox]{accent-color:var(--accent);width:15px;height:15px
     </div>
   </div>
 
-  <div class="app-footer" id="appFooter" onclick="hFooterClick()" style="cursor:pointer;user-select:none">TFS Dashboard v3.7.1</div>
+  <div class="app-footer" id="appFooter" onclick="hFooterClick()" style="cursor:pointer;user-select:none">TFS Dashboard v3.7.3</div>
 </div>
 
 <!-- Sprint popup -->
@@ -1688,7 +1688,7 @@ function fetchSpI(ids,spN,pb){var bats=[];for(var i=0;i<ids.length;i+=200)bats.p
 function fetchSpU(items,sDays,spN,pb){
   var dm={},done=0;allItemsMap={};var sDaysSet=new Set(sDays);
   items.forEach(it=>{var f=it.fields||{};allItemsMap[it.id]={title:f["System.Title"]||"",type:f["System.WorkItemType"]||"",assignee:gAN(f),state:f["System.State"]||"",tags:f["System.Tags"]||""}});
-  var uItems=items.filter(it=>{var f=it.fields||{},t=f["System.WorkItemType"]||"";if(isReq(t))return false;return(f["Microsoft.VSTS.Scheduling.CompletedWork"]||0)>0});
+  var uItems=items.filter(it=>{var f=it.fields||{},t=f["System.WorkItemType"]||"";if(isReq(t))return false;var cw=f["Microsoft.VSTS.Scheduling.CompletedWork"]||0,oe=f["Microsoft.VSTS.Scheduling.OriginalEstimate"]||0,rw=f["Microsoft.VSTS.Scheduling.RemainingWork"]||0;return cw>0||oe>0||(rw===0&&(f["System.State"]||"").toLowerCase()==="closed")});
   var tot=uItems.length;
   $(pb).innerHTML='<span class="spinner"></span>Updates: 0/'+tot+' (skipped '+(items.length-tot)+')';
   var B=50,ix=0;
@@ -1699,19 +1699,24 @@ function fetchSpU(items,sDays,spN,pb){
         (ur.value||[]).forEach(u=>{
         var atF=safeDP(u,["fields","System.AssignedTo"]);
         if(atF){var nv=atF.newValue;if(nv){curAn=typeof nv==="string"?nv:(nv.displayName||"Unassigned")}else if(nv===null||nv===""){curAn="Unassigned"}}
-        if(u.rev<=1)return;var cf=safeDP(u,["fields","Microsoft.VSTS.Scheduling.CompletedWork"]);
-        if(!cf)return;
-        var cO=(cf.oldValue===undefined||cf.oldValue===null||cf.oldValue==="")?0:parseFloat(cf.oldValue);
-        var cN=parseFloat(cf.newValue||0);if(isNaN(cO)||isNaN(cN))return;var d=cN-cO;if(d===0)return;
+        if(u.rev<=1)return;
+        var cf=safeDP(u,["fields","Microsoft.VSTS.Scheduling.CompletedWork"]);
+        var rvf=safeDP(u,["fields","Microsoft.VSTS.Scheduling.RevisedEstimate"]);
+        if(!cf&&!rvf)return;
         var dt=null,chF=safeDP(u,["fields","System.ChangedDate"]);if(chF&&chF.newValue)dt=chF.newValue;if(!dt&&u.revisedDate&&u.revisedDate.indexOf("9999")===-1)dt=u.revisedDate;if(!dt)return;
         var dk=dKey(dt);if(!sDaysSet.has(dk))return;
         var rb=getRevAuthor(u);
         var an=curAn;
-        if(!dm[an])dm[an]={};if(!dm[an][dk])dm[an][dk]={completed:0,remaining:0,items:[]};dm[an][dk].completed+=d;
+        if(!dm[an])dm[an]={};if(!dm[an][dk])dm[an][dk]={completed:0,revised:0,remaining:0,items:[]};
+        var d=0;
+        if(cf&&cf.newValue!==null&&cf.newValue!==undefined&&cf.newValue!==""){var cO=(cf.oldValue===undefined||cf.oldValue===null||cf.oldValue==="")?0:parseFloat(cf.oldValue);var cN=parseFloat(cf.newValue);if(!isNaN(cO)&&!isNaN(cN)&&cN-cO!==0){d=cN-cO;dm[an][dk].completed+=d}}
+        var rd=0;
+        if(rvf&&rvf.newValue!==null&&rvf.newValue!==undefined&&rvf.newValue!==""){var rO=(rvf.oldValue===undefined||rvf.oldValue===null||rvf.oldValue==="")?0:parseFloat(rvf.oldValue);var rN=parseFloat(rvf.newValue);if(!isNaN(rO)&&!isNaN(rN)&&rN-rO!==0){rd=rN-rO;dm[an][dk].revised+=rd}}
+        if(d===0&&rd===0)return;
         var rf=safeDP(u,["fields","Microsoft.VSTS.Scheduling.RemainingWork"]);if(rf)dm[an][dk].remaining=parseFloat(rf.newValue||0);
         var sf=safeDP(u,["fields","System.State"]),sc=sf?((sf.oldValue||"")+"→"+(sf.newValue||"")):"";
-        var found=false;for(var di=0;di<dm[an][dk].items.length;di++){if(dm[an][dk].items[di].id===item.id){dm[an][dk].items[di].hours+=d;dm[an][dk].items[di].updates.push({ts:dt,by:rb,delta:d});if(dm[an][dk].items[di].updatedBy.indexOf(rb)===-1)dm[an][dk].items[di].updatedBy.push(rb);found=true;break}}
-        if(!found)dm[an][dk].items.push({id:item.id,title:f["System.Title"]||"",hours:d,activity:f["Microsoft.VSTS.Common.Activity"]||"",type:f["System.WorkItemType"]||"",stateChange:sc,updatedBy:[rb],updates:[{ts:dt,by:rb,delta:d}]});
+        var found=false;for(var di=0;di<dm[an][dk].items.length;di++){if(dm[an][dk].items[di].id===item.id){if(d!==0){dm[an][dk].items[di].hours+=d;dm[an][dk].items[di].updates.push({ts:dt,by:rb,delta:d,type:'completed'})}if(rd!==0){dm[an][dk].items[di].revisedHours=(dm[an][dk].items[di].revisedHours||0)+rd;dm[an][dk].items[di].updates.push({ts:dt,by:rb,delta:rd,type:'revised'})}if(dm[an][dk].items[di].updatedBy.indexOf(rb)===-1)dm[an][dk].items[di].updatedBy.push(rb);found=true;break}}
+        if(!found)dm[an][dk].items.push({id:item.id,title:f["System.Title"]||"",hours:d,revisedHours:rd,activity:f["Microsoft.VSTS.Common.Activity"]||"",type:f["System.WorkItemType"]||"",stateChange:sc,updatedBy:[rb],updates:(d!==0&&rd!==0?[{ts:dt,by:rb,delta:d,type:'completed'},{ts:dt,by:rb,delta:rd,type:'revised'}]:d!==0?[{ts:dt,by:rb,delta:d,type:'completed'}]:[{ts:dt,by:rb,delta:rd,type:'revised'}])});
       })}).catch(()=>{}).then(()=>{done++})})).then(()=>{$(pb).innerHTML='<span class="spinner"></span>Updates: '+done+'/'+tot+' ('+Math.round(done/tot*100)+'%)';return go()})}
   function fin(){var am={};items.forEach(it=>{var f=it.fields||{},an=gAN(f);if(!am[an])am[an]={name:an,tasks:[],totalOriginal:0,totalCompleted:0,totalRemaining:0,daily:{}};
     var aTo=f["System.AssignedTo"],abF=f["Microsoft.VSTS.Common.ActivatedBy"];
@@ -1964,9 +1969,9 @@ function rDaily(){var d=spData,days=d.sprintDays||[],tk=tKey(),tt=[],mx=1;for(va
   h+='<th style="text-align:center">Total</th></tr></thead><tbody>';
   d.assignees.forEach((a,idx)=>{var hue=idx*47,in2=ini(a.name),rt=0,co=capData[a.name],cl=co?co.capacityPerDay+"h/d":"",lc=co?co.daysOff.filter(doff=>days.indexOf(doff)>-1).length:0;
     h+='<tr><td style="position:sticky;left:0;background:var(--bg-card);z-index:1"><div style="display:flex;align-items:center;gap:6px"><div class="avatar avatar-sm" style="background:hsl('+hue+',60%,45%)">'+in2+'</div><div><span style="font-size:11px;font-weight:600;color:var(--text-primary);white-space:nowrap">'+a.name+'</span>'+(cl?'<div style="font-size:9px;color:var(--text-dim)">'+cl+(lc?' · 🖐'+lc:'')+'</div>':'')+'</div></div></td>';
-    days.forEach((dy,j)=>{var dd=a.daily[dy],v=dd?(dd.completed||0):0;rt+=v;tt[j]+=v;var bg=gDC(v,a.name,dy),tc=gDTC(v,a.name,dy),io=co&&co.daysOff.indexOf(dy)>-1,ih=teamDaysOff.indexOf(dy)>-1,ck=v>0||io||ih,en=a.name.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+    days.forEach((dy,j)=>{var dd=a.daily[dy],v=dd?(dd.completed||0):0,rv=dd?(dd.revised||0):0;rt+=v;tt[j]+=v;var bg=gDC(v,a.name,dy),tc=gDTC(v,a.name,dy),io=co&&co.daysOff.indexOf(dy)>-1,ih=teamDaysOff.indexOf(dy)>-1,ck=v>0||rv>0||io||ih,en=a.name.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
       h+='<td'+(ck?' onclick="showDP(\''+en+"','"+dy+"')\"":'')+' style="text-align:center;'+(dy===tk?'background:rgba(59,130,246,.08);':bg?bg+';':'')+(ck?'cursor:pointer;':'')+'\">';
-      if(ih&&v<=0)h+='<span style="font-size:9px;color:var(--red)">🏖</span>';else if(io&&v<=0)h+='<span style="font-size:9px;color:var(--text-dim)">🖐</span>';else if(v>0)h+='<span style="color:'+tc+';font-weight:600;font-size:11px">'+v.toFixed(1)+'</span>';else h+='<span style="color:var(--border)">-</span>';h+='</td>'});
+      if(ih&&v<=0&&rv<=0)h+='<span style="font-size:9px;color:var(--red)">🏖</span>';else if(io&&v<=0&&rv<=0)h+='<span style="font-size:9px;color:var(--text-dim)">🖐</span>';else if(v>0||rv>0){h+='<div style="line-height:1.3">';if(v>0)h+='<span style="color:'+tc+';font-weight:600;font-size:11px">'+v.toFixed(1)+'</span>';if(rv>0)h+='<div style="color:var(--red);font-size:9px;font-weight:600">+'+rv.toFixed(1)+'r</div>';h+='</div>'}else h+='<span style="color:var(--border)">-</span>';h+='</td>'});
     h+='<td style="text-align:center;font-weight:700;color:var(--accent-light);font-size:12px">'+rt.toFixed(1)+'</td></tr>'});
   var tg=0;tt.forEach(v=>{tg+=v;if(v>mx)mx=v});
   h+='<tr style="border-top:2px solid var(--border);font-weight:700"><td style="position:sticky;left:0;background:var(--bg-card);z-index:1;color:var(--text-muted);font-size:11px">Team Total</td>';
@@ -1974,20 +1979,23 @@ function rDaily(){var d=spData,days=d.sprintDays||[],tk=tKey(),tt=[],mx=1;for(va
   h+='<td style="text-align:center;color:var(--accent);font-size:13px">'+tg.toFixed(1)+'</td></tr></tbody></table></div>';
   $('dailyView').innerHTML=h}
 function showDP(an,ds){var d=spData;if(!d)return;var a=null;d.assignees.forEach(x=>{if(x.name===an)a=x});if(!a)return;
-  var dd=a.daily[ds],items=dd?(dd.items||[]):[],th=dd?dd.completed:0,co=capData[an],io=co&&co.daysOff.indexOf(ds)>-1,pd=co?co.capacityPerDay:0,up=pd>0?Math.round(th/pd*100):0;
+  var dd=a.daily[ds],items=dd?(dd.items||[]):[],th=dd?dd.completed:0,trv=dd?(dd.revised||0):0,co=capData[an],io=co&&co.daysOff.indexOf(ds)>-1,pd=co?co.capacityPerDay:0,up=pd>0?Math.round(th/pd*100):0;
   var ih2=teamDaysOff.indexOf(ds)>-1;$('popupTitle').innerHTML=an+' — <span style="color:var(--accent-light)">'+fmtD(ds)+'</span>'+(ih2?' <span style="color:var(--red);font-size:11px">🏖 HOLIDAY</span>':io?' <span style="color:var(--purple);font-size:11px">🖐 LEAVE</span>':'');
-  var h='<div style="display:flex;gap:16px;margin-bottom:12px;padding:10px;background:var(--bg-base);border-radius:8px;font-size:11px">';
+  var h='<div style="display:flex;gap:16px;margin-bottom:12px;padding:10px;background:var(--bg-base);border-radius:8px;font-size:11px;flex-wrap:wrap">';
   if(co)h+='<div><span style="color:var(--text-dim)">Cap:</span> <strong style="color:var(--text-muted)">'+pd+'h</strong></div>';
-  h+='<div><span style="color:var(--text-dim)">Logged:</span> <strong style="color:var(--green)">'+th.toFixed(1)+'h</strong></div>';
+  h+='<div><span style="color:var(--text-dim)">Completed:</span> <strong style="color:var(--green)">'+th.toFixed(1)+'h</strong></div>';
+  if(trv>0)h+='<div><span style="color:var(--text-dim)">Revised:</span> <strong style="color:var(--red)">+'+trv.toFixed(1)+'h</strong></div>';
   if(pd>0)h+='<div><span style="color:var(--text-dim)">Util:</span> <strong style="color:'+(up>=100?'var(--green)':up>=75?'var(--amber)':'var(--red)')+'">'+up+'%</strong></div>';h+='</div>';
   if(!items.length)h+='<div style="color:var(--text-dim);font-size:12px;text-align:center;padding:16px">'+(ih2?"Team holiday":io?"On leave":"No hours logged")+'</div>';
 else{items.forEach(it=>{
-    h+='<div class="popup-item" style="padding:10px 0"><div style="display:flex;justify-content:space-between;margin-bottom:6px"><div>'+tIco(it.type)+' <a class="wi-link" href="'+SP_BASE+'/_workitems/edit/'+it.id+'" target="_blank">#'+it.id+'</a> <span class="badge" style="font-size:9px;background:rgba(59,130,246,.15);color:var(--prog-text)">'+it.type+'</span></div><span style="color:'+(it.hours>=0?'var(--green)':'var(--red)')+';font-weight:700;font-size:13px">'+(it.hours>=0?'+':'')+it.hours.toFixed(1)+'h</span></div><div style="font-size:12px;color:var(--text-secondary);margin-bottom:6px">'+esc(it.title)+'</div>';
+    var rvBadge=it.revisedHours?'<span style="margin-left:6px;color:var(--red);font-size:11px;font-weight:700">+'+it.revisedHours.toFixed(1)+'r</span>':'';
+    h+='<div class="popup-item" style="padding:10px 0"><div style="display:flex;justify-content:space-between;margin-bottom:6px"><div>'+tIco(it.type)+' <a class="wi-link" href="'+SP_BASE+'/_workitems/edit/'+it.id+'" target="_blank">#'+it.id+'</a> <span class="badge" style="font-size:9px;background:rgba(59,130,246,.15);color:var(--prog-text)">'+it.type+'</span></div><span style="display:flex;align-items:center;gap:6px"><span style="color:'+(it.hours>=0?'var(--green)':'var(--red)')+';font-weight:700;font-size:13px">'+(it.hours>=0?'+':'')+it.hours.toFixed(1)+'h</span>'+rvBadge+'</span></div><div style="font-size:12px;color:var(--text-secondary);margin-bottom:6px">'+esc(it.title)+'</div>';
     if(it.updates&&it.updates.length){
       h+='<div style="margin-top:6px;padding:8px 10px;background:var(--bg-base);border:1px solid var(--bg-card);border-radius:8px">';
       it.updates.slice().sort(function(a,b){return new Date(a.ts)-new Date(b.ts)}).forEach(function(upd,ui){
-        var tc=upd.delta>=0?'var(--green)':'var(--red)',sign=upd.delta>=0?'+':'';
-        h+='<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;font-size:11px;'+(ui>0?'border-top:1px solid var(--bg-card);':'')+'"><div style="display:flex;align-items:center;gap:8px"><span style="color:var(--text-dim)">🕐 '+fmtT(upd.ts)+'</span><span style="color:var(--text-muted)">✏️ '+esc(upd.by)+'</span></div><span style="color:'+tc+';font-weight:700;font-size:12px">'+sign+upd.delta.toFixed(1)+'h</span></div>'});
+        var isRev=upd.type==='revised',tc=isRev?'var(--red)':(upd.delta>=0?'var(--green)':'var(--red)'),sign=upd.delta>=0?'+':'';
+        var lbl=isRev?' <span style="font-size:9px;color:var(--red);background:rgba(239,68,68,.1);padding:1px 4px;border-radius:3px">revised</span>':'';
+        h+='<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;font-size:11px;'+(ui>0?'border-top:1px solid var(--bg-card);':'')+'"><div style="display:flex;align-items:center;gap:8px"><span style="color:var(--text-dim)">🕐 '+fmtT(upd.ts)+'</span><span style="color:var(--text-muted)">✏️ '+esc(upd.by)+'</span>'+lbl+'</div><span style="color:'+tc+';font-weight:700;font-size:12px">'+sign+upd.delta.toFixed(1)+'h</span></div>'});
       h+='</div>'}
     else{h+='<div style="margin-top:4px;padding:6px 10px;background:var(--bg-base);border-radius:6px;font-size:10px;color:var(--text-dim)">No revision details</div>'}
     h+='</div>'})}
