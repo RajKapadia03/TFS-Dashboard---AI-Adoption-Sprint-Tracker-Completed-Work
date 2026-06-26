@@ -13,7 +13,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<meta name="version" content="3.7.0">
+<meta name="version" content="3.7.1">
 <meta name="author" content="&#67;&#68;&#80;">
 <meta name="copyright" content="&#67;&#111;&#112;&#121;&#114;&#105;&#103;&#104;&#116; &#169; &#50;&#48;&#50;&#54; &#67;&#68;&#80;. &#65;&#108;&#108; &#114;&#105;&#103;&#104;&#116;&#115; &#114;&#101;&#115;&#101;&#114;&#118;&#101;&#100;.">
 <meta name="rights" content="&#169; &#50;&#48;&#50;&#54; &#67;&#68;&#80; &#45; &#85;&#110;&#97;&#117;&#116;&#104;&#111;&#114;&#105;&#122;&#101;&#100; &#99;&#111;&#112;&#121;&#105;&#110;&#103; &#112;&#114;&#111;&#104;&#105;&#98;&#105;&#116;&#101;&#100;">
@@ -1060,7 +1060,7 @@ th.sel-th input[type=checkbox]{accent-color:var(--accent);width:15px;height:15px
     </div>
   </div>
 
-  <div class="app-footer" id="appFooter" onclick="hFooterClick()" style="cursor:pointer;user-select:none">TFS Dashboard v3.7.0</div>
+  <div class="app-footer" id="appFooter" onclick="hFooterClick()" style="cursor:pointer;user-select:none">TFS Dashboard v3.7.1</div>
 </div>
 
 <!-- Sprint popup -->
@@ -2114,7 +2114,7 @@ function cwRender(tree,tots){var incAll=$('cwAllDisc').checked;
   var _cwExemptTags=['ad hoc support','adhoc support','team b support','alm','engineering operations & support','engineering operations and support','regression','adhoc qa reserve'];
   function _cwHasExemptTag(tags){if(!tags||!tags.length)return false;for(var i=0;i<tags.length;i++){if(_cwExemptTags.indexOf((tags[i]||'').toLowerCase())>=0)return true}return false}
   $('cwTree').innerHTML=disp.map((r,i)=>{var thtml=r.tasks.map(t=>{var dc=t.discipline.toLowerCase().includes('development')?'development':t.discipline.toLowerCase().includes('test')?'test':'oth';
-    return'<div class="task-row"><div><div style="font-weight:600;color:var(--text-primary);font-size:12px">'+esc(t.title)+'</div><div style="font-size:11px;color:var(--text-dim);margin-top:3px"><a class="wi-link" href="'+cwGetBase()+'/_workitems/edit/'+t.id+'" target="_blank" style="'+cwIdColor(t.state)+'">#'+t.id+'</a> · <span class="badge" style="'+stSt(t.state)+'">'+esc(t.state)+'</span></div></div><div style="font-size:11px;color:var(--text-muted);padding:4px 8px;background:var(--bg-base);border-radius:6px">📂 '+esc(t.iterationShort)+'</div><div style="font-size:11px;color:var(--text-muted);padding:4px 8px;background:var(--bg-base);border-radius:6px">👤 '+esc(t.assignedTo)+'</div><div style="font-size:11px;color:var(--text-muted);padding:4px 8px;background:var(--bg-base);border-radius:6px">⚙️ '+esc(t.activity)+'</div><div class="task-disc '+dc+'">'+esc(t.discipline)+'</div><div style="text-align:right;min-width:130px;font-size:11px"><div style="color:var(--text-muted)">Est: '+t.originalEstimate.toFixed(1)+'h</div><div style="color:var(--green);font-weight:700">Done: '+t.completedWork.toFixed(1)+'h</div><div style="color:var(--amber)">Left: '+t.remainingWork.toFixed(1)+'h</div></div></div>'}).join('');
+    return'<div class="task-row"><div><div style="font-weight:600;color:var(--text-primary);font-size:12px">'+esc(t.title)+'</div><div style="font-size:11px;color:var(--text-dim);margin-top:3px"><a class="wi-link" href="'+cwGetBase()+'/_workitems/edit/'+t.id+'" target="_blank" style="'+cwIdColor(t.state)+'">#'+t.id+'</a> · <span class="badge" style="'+stSt(t.state)+'">'+esc(t.state)+'</span></div></div><div style="font-size:11px;color:var(--text-muted);padding:4px 8px;background:var(--bg-base);border-radius:6px">📂 '+esc(t.iterationShort)+'</div><div style="font-size:11px;color:var(--text-muted);padding:4px 8px;background:var(--bg-base);border-radius:6px">👤 '+esc(t.assignedTo)+'</div><div style="font-size:11px;color:var(--text-muted);padding:4px 8px;background:var(--bg-base);border-radius:6px">⚙️ '+esc(t.activity)+'</div><div class="task-disc '+dc+'">'+esc(t.discipline)+'</div><div style="text-align:right;min-width:130px;font-size:11px"><div style="color:var(--text-muted)">Est: '+t.originalEstimate.toFixed(1)+'h</div><div style="color:var(--green);font-weight:700">Completed: '+Math.min(t.completedWork,t.originalEstimate).toFixed(1)+'h</div>'+(t.completedWork>t.originalEstimate?'<div style="color:var(--red);font-weight:700">Revised: '+(t.completedWork-t.originalEstimate).toFixed(1)+'h</div>':'')+'<div style="color:var(--amber)">Left: '+t.remainingWork.toFixed(1)+'h</div></div></div>'}).join('');
     var _mismatch=Math.abs((r.reqCompletedWork||0)-(r.completedWork||0))>0.05;
     var _exempt=_cwHasExemptTag(r.tags);
     var _isClosed=(r.state||'').toLowerCase()==='closed';
